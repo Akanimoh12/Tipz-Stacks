@@ -5,7 +5,7 @@ authors = []
 telemetry = true
 cache_dir = './.cache'
 requirements = []
-# Using Clarity 4 with latest epoch
+# Using Clarity 4 with Clarinet 3.11.0
 [contracts.sip-010-trait]
 path = 'contracts/traits/sip-010-trait.clar'
 clarity_version = 4

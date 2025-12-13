@@ -48,13 +48,46 @@
 ;; ============================================
 ;; Data Variables
 ;; ============================================
-;; (Contract data variables will be defined here)
+
+;; Total Supply
+;; Tracks the total number of CHEER tokens in circulation
+;; Starts at u0 and increases with each daily claim
+;; Maximum value: unlimited (grows with platform adoption)
+(define-data-var total-supply uint u0)
+
+;; Token URI
+;; Optional metadata URI pointing to token information (JSON)
+;; Can be updated to IPFS link for decentralized metadata
+;; Example: ipfs://QmXx.../cheer-token-metadata.json
+(define-data-var token-uri (optional (string-utf8 256)) (some TOKEN_URI))
 
 
 ;; ============================================
 ;; Data Maps
 ;; ============================================
-;; (Contract data maps will be defined here)
+
+;; Token Balances
+;; Maps each principal (user address) to their CHEER token balance
+;; Key: principal (user's Stacks address)
+;; Value: uint (token balance, default u0 if not set)
+;; Updated on: transfers, mints (claims), burns (future)
+(define-map token-balances principal uint)
+
+;; Last Claim Block Heights
+;; Tracks the block height when each user last claimed tokens
+;; Key: principal (user's Stacks address)
+;; Value: uint (Stacks block height, 0 if never claimed)
+;; Used to enforce 144-block (24-hour) cooldown period
+;; Block height is more reliable than timestamps on blockchain
+(define-map last-claim-block-heights principal uint)
+
+;; Total Claimed Per User
+;; Tracks lifetime CHEER tokens claimed by each user
+;; Key: principal (user's Stacks address)
+;; Value: uint (total tokens claimed across all claims)
+;; Used for: analytics, user statistics, engagement tracking
+;; Increments by DAILY_CLAIM_AMOUNT (100) on each successful claim
+(define-map total-claimed-by-user principal uint)
 
 
 ;; ============================================
