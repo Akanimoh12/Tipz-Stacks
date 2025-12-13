@@ -355,10 +355,97 @@
 ;; ============================================
 ;; Public Functions - Daily Claim Mechanism
 ;; ============================================
-;; (Daily claim functions will be implemented here)
+
+;; Claim Daily Tokens
+;; Main function for users to claim their daily 100 CHEER tokens
+;; Can be called once every 144 blocks (~24 hours)
+;; @returns: (response uint uint) - (ok u100) on success with amount claimed, error code on failure
+(define-public (claim-daily-tokens)
+  (let
+    (
+      ;; Get the caller's address
+      (claimer tx-sender)
+      ;; Get current block height
+      (current-block stacks-block-height)
+      ;; Get user's total claimed so far (default to u0 if first claim)
+      (current-total-claimed (default-to u0 (map-get? total-claimed-by-user claimer)))
+      ;; Calculate new total after this claim
+      (new-total-claimed (+ current-total-claimed DAILY_CLAIM_AMOUNT))
+    )
+    ;; Validate user is eligible to claim (using private helper function)
+    (try! (can-claim-tokens claimer))
+    
+    ;; Mint tokens to the claimer (using private helper function)
+    (try! (mint-tokens claimer DAILY_CLAIM_AMOUNT))
+    
+    ;; Update the last claim block height for this user
+    (map-set last-claim-block-heights claimer current-block)
+    
+    ;; Update the total claimed counter for analytics
+    (map-set total-claimed-by-user claimer new-total-claimed)
+    
+    ;; Emit event for off-chain tracking and frontend notifications
+    (print {
+      event: "tokens-claimed",
+      user: claimer,
+      amount: DAILY_CLAIM_AMOUNT,
+      block-height: current-block,
+      total-claimed: new-total-claimed
+    })
+    
+    ;; Return success with amount claimed
+    (ok DAILY_CLAIM_AMOUNT)
+  )
+)
 
 
 ;; ============================================
 ;; Read-Only Functions
 ;; ============================================
-;; (Read-only functions will be implemented here)
+
+;; Get Last Claim Block
+;; Returns the block height when user last claimed tokens
+;; Used for: calculating eligibility, showing countdown timers
+;; @param user: principal - The address to query
+;; @returns: uint - Block height of last claim, u0 if never claimed
+(define-read-only (get-last-claim-block (user principal))
+  (default-to u0 (map-get? last-claim-block-heights user))
+)
+
+;; Get Blocks Until Claim
+;; Calculates remaining blocks until user can claim again
+;; Perfect for frontend countdown timers
+;; @param user: principal - The address to query
+;; @returns: uint - Blocks remaining (0 if can claim now)
+(define-read-only (get-blocks-until-claim (user principal))
+  (blocks-until-next-claim user)
+)
+
+;; Can Claim Now
+;; Boolean check if user is currently eligible to claim
+;; Simplified wrapper around can-claim-tokens for frontend
+;; @param user: principal - The address to check
+;; @returns: bool - true if eligible, false if cooldown active
+(define-read-only (can-claim-now (user principal))
+  (let
+    (
+      ;; Get the block height of user's last claim
+      (last-claim (default-to u0 (map-get? last-claim-block-heights user)))
+      ;; Get current block height
+      (current-block stacks-block-height)
+      ;; Calculate blocks elapsed
+      (blocks-passed (- current-block last-claim))
+    )
+    ;; Return true if never claimed OR cooldown period has passed
+    (or (is-eq last-claim u0) (>= blocks-passed CLAIM_COOLDOWN_BLOCKS))
+  )
+)
+
+;; Get Total Claimed By User
+;; Returns lifetime CHEER tokens claimed by a specific user
+;; Used for: user statistics, analytics, leaderboards
+;; @param user: principal - The address to query
+;; @returns: uint - Total tokens claimed across all claims
+(define-read-only (get-total-claimed-by-user (user principal))
+  (default-to u0 (map-get? total-claimed-by-user user))
+)
