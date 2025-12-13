@@ -24,10 +24,10 @@ export const Button: React.FC<ButtonProps> = ({
   const baseClasses = 'inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95';
 
   const variantClasses = {
-    primary: 'bg-accent hover:bg-accent-light text-white shadow-md hover:shadow-lg',
-    secondary: 'border-2 border-accent text-accent hover:bg-accent hover:text-white',
-    ghost: 'text-accent hover:bg-accent hover:bg-opacity-10',
-    danger: 'bg-error hover:bg-red-600 text-white shadow-md hover:shadow-lg',
+    primary: 'bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] hover:from-[#FF8C42] hover:to-[#FF6B35] text-white shadow-md hover:shadow-lg',
+    secondary: 'border-2 border-[#FF6B35] text-[#FF6B35] hover:bg-[#FF6B35] hover:text-white',
+    ghost: 'text-[#FF6B35] hover:bg-[#FF6B35] hover:bg-opacity-10',
+    danger: 'bg-[#EF4444] hover:bg-red-600 text-white shadow-md hover:shadow-lg',
   };
 
   const sizeClasses = {
