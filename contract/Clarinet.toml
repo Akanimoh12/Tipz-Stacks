@@ -5,14 +5,20 @@ authors = []
 telemetry = true
 cache_dir = './.cache'
 requirements = []
+# Using Clarity 4 with latest epoch
+[contracts.sip-010-trait]
+path = 'contracts/traits/sip-010-trait.clar'
+clarity_version = 4
+epoch = 'latest'
+
 [contracts.cheer-token]
 path = 'contracts/cheer-token.clar'
-clarity_version = 3
+clarity_version = 4
 epoch = 'latest'
 
 [contracts.tipz-core]
 path = 'contracts/tipz-core.clar'
-clarity_version = 3
+clarity_version = 4
 epoch = 'latest'
 [repl.analysis]
 passes = ['check_checker']

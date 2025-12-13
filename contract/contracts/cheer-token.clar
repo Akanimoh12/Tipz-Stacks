@@ -10,13 +10,39 @@
 ;; ============================================
 ;; Traits
 ;; ============================================
-;; (Trait implementations will be defined here)
+;; Import the SIP-010 fungible token trait
+(use-trait sip-010-trait .sip-010-trait.sip-010-trait)
+;; This contract implements the SIP-010 standard
 
 
 ;; ============================================
 ;; Constants
 ;; ============================================
-;; (Contract constants will be defined here)
+
+;; Token Metadata
+;; Token name following SIP-010 standard
+(define-constant TOKEN_NAME "Cheer Token")
+
+;; Token symbol (ticker) for the token
+(define-constant TOKEN_SYMBOL "CHEER")
+
+;; Number of decimal places (0 = whole tokens only)
+(define-constant TOKEN_DECIMALS u0)
+
+;; Optional URI for token metadata (can be updated to IPFS link)
+(define-constant TOKEN_URI u"https://tipz-stacks.com/cheer-token-metadata.json")
+
+;; Daily Claim Mechanism
+;; Amount of CHEER tokens users can claim daily
+(define-constant DAILY_CLAIM_AMOUNT u100)
+
+;; Cooldown period in blocks (~24 hours at 10 min/block)
+;; 144 blocks = 1,440 minutes = 24 hours
+(define-constant CLAIM_COOLDOWN_BLOCKS u144)
+
+;; Contract Owner
+;; The principal that deployed the contract
+(define-constant CONTRACT_OWNER tx-sender)
 
 
 ;; ============================================
@@ -34,7 +60,37 @@
 ;; ============================================
 ;; Error Codes
 ;; ============================================
-;; (Error codes will be defined here)
+
+;; Authorization Errors
+;; Returned when caller is not authorized for the operation
+(define-constant ERR-NOT-AUTHORIZED (err u100))
+
+;; Returned when only contract owner can perform action
+(define-constant ERR-OWNER-ONLY (err u101))
+
+;; Transfer Errors
+;; Returned when sender has insufficient balance for transfer
+(define-constant ERR-INSUFFICIENT-BALANCE (err u200))
+
+;; Returned when transfer amount is zero or invalid
+(define-constant ERR-INVALID-AMOUNT (err u201))
+
+;; Daily Claim Errors
+;; Returned when user tries to claim before 24-hour cooldown expires
+(define-constant ERR-CLAIM-COOLDOWN-ACTIVE (err u300))
+
+;; Returned when claim has already been processed in current period
+(define-constant ERR-ALREADY-CLAIMED (err u301))
+
+;; Returned when claim amount would cause overflow
+(define-constant ERR-CLAIM-OVERFLOW (err u302))
+
+;; General Errors
+;; Returned when an arithmetic operation would overflow
+(define-constant ERR-OVERFLOW (err u400))
+
+;; Returned when an arithmetic operation would underflow
+(define-constant ERR-UNDERFLOW (err u401))
 
 
 ;; ============================================
