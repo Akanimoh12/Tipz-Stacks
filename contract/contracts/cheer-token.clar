@@ -129,7 +129,125 @@
 ;; ============================================
 ;; Private Functions
 ;; ============================================
-;; (Private helper functions will be defined here)
+
+;; Mint Tokens
+;; Internal function to create new tokens and assign them to a recipient
+;; Used by: claim-daily-tokens function
+;; @param recipient: principal - The address receiving the minted tokens
+;; @param amount: uint - Number of tokens to mint
+;; @returns: (response bool uint) - (ok true) on success, error code on failure
+(define-private (mint-tokens (recipient principal) (amount uint))
+  (let
+    (
+      ;; Get current balance of recipient (default to u0 if not found)
+      (current-balance (default-to u0 (map-get? token-balances recipient)))
+      ;; Get current total supply
+      (current-supply (var-get total-supply))
+      ;; Calculate new balance after minting
+      (new-balance (+ current-balance amount))
+      ;; Calculate new total supply after minting
+      (new-supply (+ current-supply amount))
+    )
+    ;; Validate amount is greater than zero
+    (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+    
+    ;; Update recipient's balance in the map
+    (map-set token-balances recipient new-balance)
+    
+    ;; Update total supply variable
+    (var-set total-supply new-supply)
+    
+    ;; Return success
+    (ok true)
+  )
+)
+
+;; Burn Tokens
+;; Internal function to destroy tokens from a sender's balance
+;; Used for: future deflationary mechanisms or token removal
+;; @param sender: principal - The address whose tokens will be burned
+;; @param amount: uint - Number of tokens to burn
+;; @returns: (response bool uint) - (ok true) on success, error code on failure
+(define-private (burn-tokens (sender principal) (amount uint))
+  (let
+    (
+      ;; Get current balance of sender (default to u0 if not found)
+      (current-balance (default-to u0 (map-get? token-balances sender)))
+      ;; Get current total supply
+      (current-supply (var-get total-supply))
+      ;; Calculate new balance after burning
+      (new-balance (- current-balance amount))
+      ;; Calculate new total supply after burning
+      (new-supply (- current-supply amount))
+    )
+    ;; Validate amount is greater than zero
+    (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+    
+    ;; Validate sender has sufficient balance to burn
+    (asserts! (>= current-balance amount) ERR-INSUFFICIENT-BALANCE)
+    
+    ;; Update sender's balance in the map
+    (map-set token-balances sender new-balance)
+    
+    ;; Update total supply variable
+    (var-set total-supply new-supply)
+    
+    ;; Return success
+    (ok true)
+  )
+)
+
+;; Can Claim Tokens
+;; Validates if a user is eligible to claim daily tokens
+;; Checks: 144 blocks (24 hours) have passed since last claim
+;; @param user: principal - The address attempting to claim
+;; @returns: (response bool uint) - (ok true) if eligible, error with descriptive message if not
+(define-private (can-claim-tokens (user principal))
+  (let
+    (
+      ;; Get the block height of user's last claim (u0 if never claimed)
+      (last-claim (default-to u0 (map-get? last-claim-block-heights user)))
+      ;; Get current block height from Stacks blockchain
+      (current-block stacks-block-height)
+      ;; Calculate blocks elapsed since last claim
+      (blocks-passed (- current-block last-claim))
+    )
+    ;; Check if user has never claimed (last-claim = u0) OR 144+ blocks have passed
+    ;; If last-claim is u0, this is their first claim (always eligible)
+    ;; If blocks-passed >= CLAIM_COOLDOWN_BLOCKS (144), cooldown period has expired
+    (if (or (is-eq last-claim u0) (>= blocks-passed CLAIM_COOLDOWN_BLOCKS))
+      ;; User is eligible to claim
+      (ok true)
+      ;; User is not eligible - cooldown still active
+      ERR-CLAIM-COOLDOWN-ACTIVE
+    )
+  )
+)
+
+;; Blocks Until Next Claim
+;; Calculates how many blocks remain until user can claim again
+;; Used for: frontend countdown timers and user information
+;; @param user: principal - The address to check
+;; @returns: uint - Number of blocks remaining (0 if can claim now)
+(define-private (blocks-until-next-claim (user principal))
+  (let
+    (
+      ;; Get the block height of user's last claim (u0 if never claimed)
+      (last-claim (default-to u0 (map-get? last-claim-block-heights user)))
+      ;; Get current block height
+      (current-block stacks-block-height)
+      ;; Calculate blocks elapsed since last claim
+      (blocks-passed (- current-block last-claim))
+    )
+    ;; If never claimed or cooldown expired, return 0 (can claim now)
+    (if (or (is-eq last-claim u0) (>= blocks-passed CLAIM_COOLDOWN_BLOCKS))
+      u0
+      ;; Otherwise, calculate remaining blocks in cooldown period
+      ;; Formula: 144 (cooldown) - blocks_passed = blocks_remaining
+      (- CLAIM_COOLDOWN_BLOCKS blocks-passed)
+    )
+  )
+)
 
 
 ;; ============================================
