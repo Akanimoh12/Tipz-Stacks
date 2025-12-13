@@ -1,0 +1,32 @@
+---
+id: 0
+name: Testnet deployment
+network: testnet
+stacks-node: "https://api.testnet.hiro.so"
+bitcoin-node: "http://blockstack:blockstacksystem@bitcoind.testnet.stacks.co:18332"
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-publish:
+            contract-name: sip-010-trait
+            expected-sender: ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV
+            cost: 8670
+            path: contracts/traits/sip-010-trait.clar
+            anchor-block-only: true
+            clarity-version: 4
+        - contract-publish:
+            contract-name: cheer-token
+            expected-sender: ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV
+            cost: 75460
+            path: contracts/cheer-token.clar
+            anchor-block-only: true
+            clarity-version: 4
+        - contract-publish:
+            contract-name: tipz-core
+            expected-sender: ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV
+            cost: 126680
+            path: contracts/tipz-core.clar
+            anchor-block-only: true
+            clarity-version: 4
+      epoch: "3.3"

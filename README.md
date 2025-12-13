@@ -99,6 +99,29 @@ See [project_structure.md](./project_structure.md) for complete architecture det
 - Collapsible navigation
 - Optimized images and assets
 
+## 🔗 Deployed Contracts (Testnet)
+
+**Network**: Stacks Testnet  
+**Deployer**: `ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV`  
+**Clarity Version**: 4 (Epoch 3.3 - Nakamoto)
+
+### Contract Addresses
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| **sip-010-trait** | `ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV.sip-010-trait` | [View](https://explorer.hiro.so/txid/ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV.sip-010-trait?chain=testnet) |
+| **cheer-token** | `ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV.cheer-token` | [View](https://explorer.hiro.so/txid/ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV.cheer-token?chain=testnet) |
+| **tipz-core** | `ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV.tipz-core` | [View](https://explorer.hiro.so/txid/ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV.tipz-core?chain=testnet) |
+
+**🔍 View All Contracts**: [Deployer Address on Explorer](https://explorer.hiro.so/address/ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV?chain=testnet)
+
+**📊 Deployment Stats**:
+- Total Cost: 0.210810 STX
+- Deployment Date: December 13, 2025
+- Status: ✅ Live on Testnet
+
+---
+
 ## 🔐 Smart Contract Architecture
 
 ### cheer-token.clar (CHEER Token)
@@ -163,8 +186,11 @@ npm run build       # Production build
 # frontend/.env
 VITE_PINATA_API_KEY=your_pinata_api_key
 VITE_PINATA_SECRET=your_pinata_secret
-VITE_STACKS_NETWORK=devnet  # or testnet, mainnet
-VITE_CONTRACT_ADDRESS=ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+VITE_STACKS_NETWORK=testnet
+VITE_DEPLOYER_ADDRESS=ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV
+VITE_CHEER_TOKEN_CONTRACT=ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV.cheer-token
+VITE_TIPZ_CORE_CONTRACT=ST1XHPEWSZYNN2QA9QG9JG9GHRVF6GZSFRWTFB5VV.tipz-core
+VITE_STACKS_API=https://api.testnet.hiro.so
 ```
 
 ## 🎮 User Flow
