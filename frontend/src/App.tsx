@@ -1,34 +1,91 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { SidebarProvider } from './contexts/SidebarContext'
+import ProtectedRoute from './components/common/ProtectedRoute'
+import DashboardLayout from './components/dashboard/DashboardLayout'
+import Landing from './pages/Landing'
+import Dashboard from './pages/Dashboard'
+import Discover from './pages/Discover'
+import Leaderboards from './pages/Leaderboards'
+import MyProfile from './pages/MyProfile'
+import Claim from './pages/Claim'
+import RegisterCreator from './pages/RegisterCreator'
+import NotFound from './pages/NotFound'
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <Router>
+      <SidebarProvider>
+        <Routes>
+          {/* Public Route */}
+          <Route path="/" element={<Landing />} />
+
+          {/* Protected Dashboard Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Dashboard />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/discover"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Discover />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leaderboards"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Leaderboards />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-profile"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <MyProfile />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/claim"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Claim />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/register-creator"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <RegisterCreator />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 404 Not Found */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </SidebarProvider>
+    </Router>
   )
 }
 
