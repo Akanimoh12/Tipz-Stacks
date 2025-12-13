@@ -1,157 +1,84 @@
-;; Cheer Token - SIP-010 Fungible Token Contract
-;; Platform token for cheering creators on Tipz Stacks
-;; Implements daily claiming mechanism (100 CHEER per 24 hours)
-
-;; Title: cheer-token
-;; Version: 1.0.0
-;; Summary: Platform token with daily claim mechanism
-;; Description: SIP-010 compliant token allowing users to claim 100 CHEER every 24 hours
-
 ;; ============================================
 ;; Traits
 ;; ============================================
 ;; Import the SIP-010 fungible token trait
 (use-trait sip-010-trait .sip-010-trait.sip-010-trait)
-;; This contract implements the SIP-010 standard
-
 
 ;; ============================================
 ;; Constants
 ;; ============================================
-
-;; Token Metadata
-;; Token name following SIP-010 standard
 (define-constant TOKEN_NAME "Cheer Token")
 
 ;; Token symbol (ticker) for the token
 (define-constant TOKEN_SYMBOL "CHEER")
 
-;; Number of decimal places (0 = whole tokens only)
 (define-constant TOKEN_DECIMALS u0)
 
-;; Optional URI for token metadata (can be updated to IPFS link)
 (define-constant TOKEN_URI u"https://tipz-stacks.com/cheer-token-metadata.json")
 
-;; Daily Claim Mechanism
-;; Amount of CHEER tokens users can claim daily
 (define-constant DAILY_CLAIM_AMOUNT u100)
 
-;; Cooldown period in blocks (~24 hours at 10 min/block)
-;; 144 blocks = 1,440 minutes = 24 hours
 (define-constant CLAIM_COOLDOWN_BLOCKS u144)
 
-;; Contract Owner
-;; The principal that deployed the contract
 (define-constant CONTRACT_OWNER tx-sender)
 
 
 ;; ============================================
 ;; Data Variables
 ;; ============================================
-
-;; Total Supply
-;; Tracks the total number of CHEER tokens in circulation
-;; Starts at u0 and increases with each daily claim
-;; Maximum value: unlimited (grows with platform adoption)
 (define-data-var total-supply uint u0)
 
-;; Token URI
-;; Optional metadata URI pointing to token information (JSON)
-;; Can be updated to IPFS link for decentralized metadata
-;; Example: ipfs://QmXx.../cheer-token-metadata.json
 (define-data-var token-uri (optional (string-utf8 256)) (some TOKEN_URI))
 
 
 ;; ============================================
 ;; Data Maps
 ;; ============================================
-
-;; Token Balances
-;; Maps each principal (user address) to their CHEER token balance
-;; Key: principal (user's Stacks address)
-;; Value: uint (token balance, default u0 if not set)
-;; Updated on: transfers, mints (claims), burns (future)
 (define-map token-balances principal uint)
 
-;; Last Claim Block Heights
-;; Tracks the block height when each user last claimed tokens
-;; Key: principal (user's Stacks address)
-;; Value: uint (Stacks block height, 0 if never claimed)
-;; Used to enforce 144-block (24-hour) cooldown period
-;; Block height is more reliable than timestamps on blockchain
 (define-map last-claim-block-heights principal uint)
 
-;; Total Claimed Per User
-;; Tracks lifetime CHEER tokens claimed by each user
-;; Key: principal (user's Stacks address)
-;; Value: uint (total tokens claimed across all claims)
-;; Used for: analytics, user statistics, engagement tracking
-;; Increments by DAILY_CLAIM_AMOUNT (100) on each successful claim
 (define-map total-claimed-by-user principal uint)
 
 
 ;; ============================================
 ;; Error Codes
 ;; ============================================
-
-;; Authorization Errors
-;; Returned when caller is not authorized for the operation
 (define-constant ERR-NOT-AUTHORIZED (err u100))
 
-;; Returned when only contract owner can perform action
 (define-constant ERR-OWNER-ONLY (err u101))
 
-;; Transfer Errors
-;; Returned when sender has insufficient balance for transfer
 (define-constant ERR-INSUFFICIENT-BALANCE (err u200))
 
-;; Returned when transfer amount is zero or invalid
 (define-constant ERR-INVALID-AMOUNT (err u201))
 
-;; Daily Claim Errors
-;; Returned when user tries to claim before 24-hour cooldown expires
 (define-constant ERR-CLAIM-COOLDOWN-ACTIVE (err u300))
 
-;; Returned when claim has already been processed in current period
 (define-constant ERR-ALREADY-CLAIMED (err u301))
 
-;; Returned when claim amount would cause overflow
 (define-constant ERR-CLAIM-OVERFLOW (err u302))
 
-;; General Errors
-;; Returned when an arithmetic operation would overflow
 (define-constant ERR-OVERFLOW (err u400))
 
-;; Returned when an arithmetic operation would underflow
 (define-constant ERR-UNDERFLOW (err u401))
 
 
 ;; ============================================
 ;; Private Functions
 ;; ============================================
-
-;; Mint Tokens
-;; Internal function to create new tokens and assign them to a recipient
-;; Used by: claim-daily-tokens function
-;; @param recipient: principal - The address receiving the minted tokens
-;; @param amount: uint - Number of tokens to mint
-;; @returns: (response bool uint) - (ok true) on success, error code on failure
 (define-private (mint-tokens (recipient principal) (amount uint))
   (let
     (
-      ;; Get current balance of recipient (default to u0 if not found)
       (current-balance (default-to u0 (map-get? token-balances recipient)))
       ;; Get current total supply
       (current-supply (var-get total-supply))
       ;; Calculate new balance after minting
       (new-balance (+ current-balance amount))
-      ;; Calculate new total supply after minting
       (new-supply (+ current-supply amount))
     )
     ;; Validate amount is greater than zero
     (asserts! (> amount u0) ERR-INVALID-AMOUNT)
     
-    ;; Update recipient's balance in the map
     (map-set token-balances recipient new-balance)
     
     ;; Update total supply variable
@@ -162,28 +89,19 @@
   )
 )
 
-;; Burn Tokens
-;; Internal function to destroy tokens from a sender's balance
-;; Used for: future deflationary mechanisms or token removal
-;; @param sender: principal - The address whose tokens will be burned
-;; @param amount: uint - Number of tokens to burn
-;; @returns: (response bool uint) - (ok true) on success, error code on failure
 (define-private (burn-tokens (sender principal) (amount uint))
   (let
     (
-      ;; Get current balance of sender (default to u0 if not found)
       (current-balance (default-to u0 (map-get? token-balances sender)))
       ;; Get current total supply
       (current-supply (var-get total-supply))
       ;; Calculate new balance after burning
       (new-balance (- current-balance amount))
-      ;; Calculate new total supply after burning
       (new-supply (- current-supply amount))
     )
     ;; Validate amount is greater than zero
     (asserts! (> amount u0) ERR-INVALID-AMOUNT)
     
-    ;; Validate sender has sufficient balance to burn
     (asserts! (>= current-balance amount) ERR-INSUFFICIENT-BALANCE)
     
     ;; Update sender's balance in the map
@@ -197,53 +115,31 @@
   )
 )
 
-;; Can Claim Tokens
-;; Validates if a user is eligible to claim daily tokens
-;; Checks: 144 blocks (24 hours) have passed since last claim
-;; @param user: principal - The address attempting to claim
-;; @returns: (response bool uint) - (ok true) if eligible, error with descriptive message if not
 (define-private (can-claim-tokens (user principal))
   (let
     (
-      ;; Get the block height of user's last claim (u0 if never claimed)
       (last-claim (default-to u0 (map-get? last-claim-block-heights user)))
-      ;; Get current block height from Stacks blockchain
       (current-block stacks-block-height)
-      ;; Calculate blocks elapsed since last claim
       (blocks-passed (- current-block last-claim))
     )
-    ;; Check if user has never claimed (last-claim = u0) OR 144+ blocks have passed
-    ;; If last-claim is u0, this is their first claim (always eligible)
-    ;; If blocks-passed >= CLAIM_COOLDOWN_BLOCKS (144), cooldown period has expired
     (if (or (is-eq last-claim u0) (>= blocks-passed CLAIM_COOLDOWN_BLOCKS))
       ;; User is eligible to claim
       (ok true)
-      ;; User is not eligible - cooldown still active
       ERR-CLAIM-COOLDOWN-ACTIVE
     )
   )
 )
 
-;; Blocks Until Next Claim
-;; Calculates how many blocks remain until user can claim again
-;; Used for: frontend countdown timers and user information
-;; @param user: principal - The address to check
-;; @returns: uint - Number of blocks remaining (0 if can claim now)
 (define-private (blocks-until-next-claim (user principal))
   (let
     (
-      ;; Get the block height of user's last claim (u0 if never claimed)
       (last-claim (default-to u0 (map-get? last-claim-block-heights user)))
       ;; Get current block height
       (current-block stacks-block-height)
-      ;; Calculate blocks elapsed since last claim
       (blocks-passed (- current-block last-claim))
     )
-    ;; If never claimed or cooldown expired, return 0 (can claim now)
     (if (or (is-eq last-claim u0) (>= blocks-passed CLAIM_COOLDOWN_BLOCKS))
       u0
-      ;; Otherwise, calculate remaining blocks in cooldown period
-      ;; Formula: 144 (cooldown) - blocks_passed = blocks_remaining
       (- CLAIM_COOLDOWN_BLOCKS blocks-passed)
     )
   )
@@ -253,24 +149,13 @@
 ;; ============================================
 ;; Public Functions - SIP-010 Implementation
 ;; ============================================
-
-;; Transfer
-;; Transfers tokens from sender to recipient
-;; Implements SIP-010 transfer function for wallet compatibility
-;; @param amount: uint - Number of tokens to transfer
-;; @param sender: principal - The address sending tokens (must be tx-sender)
-;; @param recipient: principal - The address receiving tokens
-;; @param memo: optional buff 34 - Optional memo for the transaction
-;; @returns: (response bool uint) - (ok true) on success, error code on failure
 (define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
   (begin
-    ;; Validate that sender is the transaction sender (security check)
     (asserts! (is-eq sender tx-sender) ERR-NOT-AUTHORIZED)
     
     ;; Validate amount is greater than zero
     (asserts! (> amount u0) ERR-INVALID-AMOUNT)
     
-    ;; Validate sender and recipient are different
     (asserts! (not (is-eq sender recipient)) ERR-INVALID-AMOUNT)
     
     (let
@@ -280,16 +165,12 @@
         ;; Get recipient's current balance
         (recipient-balance (default-to u0 (map-get? token-balances recipient)))
       )
-      ;; Validate sender has sufficient balance
       (asserts! (>= sender-balance amount) ERR-INSUFFICIENT-BALANCE)
       
-      ;; Update sender's balance (deduct amount)
       (map-set token-balances sender (- sender-balance amount))
       
-      ;; Update recipient's balance (add amount)
       (map-set token-balances recipient (+ recipient-balance amount))
       
-      ;; Emit transfer event for off-chain tracking
       (print {
         event: "transfer",
         sender: sender,
@@ -304,49 +185,26 @@
   )
 )
 
-;; Get Name
-;; Returns the token name as per SIP-010 standard
-;; @returns: (response string-ascii uint) - Token name or error
 (define-public (get-name)
   (ok TOKEN_NAME)
 )
 
-;; Get Symbol
-;; Returns the token symbol (ticker) as per SIP-010 standard
-;; @returns: (response string-ascii uint) - Token symbol or error
 (define-public (get-symbol)
   (ok TOKEN_SYMBOL)
 )
 
-;; Get Decimals
-;; Returns the number of decimal places for token divisibility
-;; CHEER tokens are whole units only (no fractional tokens)
-;; @returns: (response uint uint) - Number of decimals (u0) or error
 (define-public (get-decimals)
   (ok TOKEN_DECIMALS)
 )
 
-;; Get Balance
-;; Returns the token balance of a specific account
-;; Implements SIP-010 balance query for wallet integration
-;; @param account: principal - The address to query
-;; @returns: (response uint uint) - Account balance or error
 (define-public (get-balance (account principal))
   (ok (default-to u0 (map-get? token-balances account)))
 )
 
-;; Get Total Supply
-;; Returns the total number of tokens in circulation
-;; Increases with daily claims, decreases with burns (if implemented)
-;; @returns: (response uint uint) - Total supply or error
 (define-public (get-total-supply)
   (ok (var-get total-supply))
 )
 
-;; Get Token URI
-;; Returns optional metadata URI for token information
-;; Can point to IPFS or other decentralized storage
-;; @returns: (response (optional string-utf8) uint) - Token URI or error
 (define-public (get-token-uri)
   (ok (var-get token-uri))
 )
@@ -355,11 +213,6 @@
 ;; ============================================
 ;; Public Functions - Daily Claim Mechanism
 ;; ============================================
-
-;; Claim Daily Tokens
-;; Main function for users to claim their daily 100 CHEER tokens
-;; Can be called once every 144 blocks (~24 hours)
-;; @returns: (response uint uint) - (ok u100) on success with amount claimed, error code on failure
 (define-public (claim-daily-tokens)
   (let
     (
@@ -367,24 +220,18 @@
       (claimer tx-sender)
       ;; Get current block height
       (current-block stacks-block-height)
-      ;; Get user's total claimed so far (default to u0 if first claim)
       (current-total-claimed (default-to u0 (map-get? total-claimed-by-user claimer)))
       ;; Calculate new total after this claim
       (new-total-claimed (+ current-total-claimed DAILY_CLAIM_AMOUNT))
     )
-    ;; Validate user is eligible to claim (using private helper function)
     (try! (can-claim-tokens claimer))
     
-    ;; Mint tokens to the claimer (using private helper function)
     (try! (mint-tokens claimer DAILY_CLAIM_AMOUNT))
     
-    ;; Update the last claim block height for this user
     (map-set last-claim-block-heights claimer current-block)
     
-    ;; Update the total claimed counter for analytics
     (map-set total-claimed-by-user claimer new-total-claimed)
     
-    ;; Emit event for off-chain tracking and frontend notifications
     (print {
       event: "tokens-claimed",
       user: claimer,
@@ -402,50 +249,27 @@
 ;; ============================================
 ;; Read-Only Functions
 ;; ============================================
-
-;; Get Last Claim Block
-;; Returns the block height when user last claimed tokens
-;; Used for: calculating eligibility, showing countdown timers
-;; @param user: principal - The address to query
-;; @returns: uint - Block height of last claim, u0 if never claimed
 (define-read-only (get-last-claim-block (user principal))
   (default-to u0 (map-get? last-claim-block-heights user))
 )
 
-;; Get Blocks Until Claim
-;; Calculates remaining blocks until user can claim again
-;; Perfect for frontend countdown timers
-;; @param user: principal - The address to query
-;; @returns: uint - Blocks remaining (0 if can claim now)
 (define-read-only (get-blocks-until-claim (user principal))
   (blocks-until-next-claim user)
 )
 
-;; Can Claim Now
-;; Boolean check if user is currently eligible to claim
-;; Simplified wrapper around can-claim-tokens for frontend
-;; @param user: principal - The address to check
-;; @returns: bool - true if eligible, false if cooldown active
 (define-read-only (can-claim-now (user principal))
   (let
     (
-      ;; Get the block height of user's last claim
       (last-claim (default-to u0 (map-get? last-claim-block-heights user)))
       ;; Get current block height
       (current-block stacks-block-height)
       ;; Calculate blocks elapsed
       (blocks-passed (- current-block last-claim))
     )
-    ;; Return true if never claimed OR cooldown period has passed
     (or (is-eq last-claim u0) (>= blocks-passed CLAIM_COOLDOWN_BLOCKS))
   )
 )
 
-;; Get Total Claimed By User
-;; Returns lifetime CHEER tokens claimed by a specific user
-;; Used for: user statistics, analytics, leaderboards
-;; @param user: principal - The address to query
-;; @returns: uint - Total tokens claimed across all claims
 (define-read-only (get-total-claimed-by-user (user principal))
   (default-to u0 (map-get? total-claimed-by-user user))
 )

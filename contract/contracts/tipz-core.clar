@@ -1,35 +1,19 @@
-;; Tipz Core - Main Platform Logic Contract
-;; Handles tipping, creator management, and leaderboard functionality
-;; Integrates with cheer-token for CHEER token operations
-
-;; Title: tipz-core
-;; Version: 1.0.0
-;; Summary: Main platform logic for creator tipping and leaderboards
-;; Description: Manages creators, tippers, STX tipping, CHEER cheering, and dual leaderboards
-
 ;; ============================================
 ;; Traits
 ;; ============================================
 ;; Reference to cheer-token contract for CHEER operations
-;; Will be used for cheering functionality
+(use-trait sip-010-trait .sip-010-trait.sip-010-trait)
 
 
 ;; ============================================
 ;; Constants
 ;; ============================================
-
-;; Contract owner (deployer) - has admin privileges
 (define-constant CONTRACT_OWNER tx-sender)
 
-;; Minimum tip amount: 1 STX = 1,000,000 micro-STX
-;; Prevents spam and ensures meaningful contributions
 (define-constant MIN_TIP_AMOUNT u1000000)
 
-;; Platform fee percentage (0% for now, future-proofing for sustainability)
-;; Represented as basis points: u0 = 0%, u100 = 1%, u1000 = 10%
 (define-constant PLATFORM_FEE_PERCENTAGE u0)
 
-;; Maximum lengths for string inputs (gas optimization)
 (define-constant MAX_NAME_LENGTH u50)          ;; Creator/tipper display names
 (define-constant MAX_URI_LENGTH u256)          ;; IPFS metadata URIs (Pinata CIDs)
 (define-constant MIN_NAME_LENGTH u3)           ;; Minimum name length for validation
@@ -38,7 +22,6 @@
 ;; ============================================
 ;; Error Codes
 ;; ============================================
-
 ;; Authorization errors (100-series)
 (define-constant ERR-NOT-AUTHORIZED (err u100))
 
@@ -46,7 +29,6 @@
 (define-constant ERR-CREATOR-EXISTS (err u101))
 (define-constant ERR-CREATOR-NOT-FOUND (err u102))
 
-;; Transaction validation errors (103-106)
 (define-constant ERR-INVALID-AMOUNT (err u103))
 (define-constant ERR-SELF-TIP (err u104))
 (define-constant ERR-INSUFFICIENT-BALANCE (err u105))
@@ -60,29 +42,19 @@
 ;; ============================================
 ;; Data Variables
 ;; ============================================
-
-;; Platform-wide statistics counters
-;; These track aggregate metrics for the entire platform
-
 ;; Total number of registered creators
 (define-data-var total-creators uint u0)
 
-;; Total number of unique tippers (users who have tipped at least once)
 (define-data-var total-tippers uint u0)
 
-;; Total amount of STX tipped across all creators (in micro-STX)
 (define-data-var total-stx-tipped uint u0)
 
-;; Total amount of CHEER tokens cheered across all creators
 (define-data-var total-cheer-tipped uint u0)
 
 
 ;; ============================================
 ;; Data Maps
 ;; ============================================
-
-;; Creator profiles map: principal -> creator data
-;; Stores all registered creator information
 (define-map creators
   principal
   {
@@ -95,8 +67,6 @@
   }
 )
 
-;; Tipper profiles map: principal -> tipper data
-;; Tracks users who have tipped/cheered creators
 (define-map tippers
   principal
   {
@@ -108,17 +78,11 @@
   }
 )
 
-;; STX tip history map: {tipper, creator} -> total amount
-;; Tracks total STX tipped from each tipper to each creator
-;; Uses composite key for relational data (many-to-many relationship)
 (define-map tip-history
   {tipper: principal, creator: principal}
   uint  ;; Total micro-STX tipped (cumulative)
 )
 
-;; CHEER cheer history map: {tipper, creator} -> total amount
-;; Tracks total CHEER tokens cheered from each tipper to each creator
-;; Uses composite key for relational data (many-to-many relationship)
 (define-map cheer-history
   {tipper: principal, creator: principal}
   uint  ;; Total CHEER tokens cheered (cumulative)
@@ -128,46 +92,320 @@
 ;; ============================================
 ;; Private Functions
 ;; ============================================
-;; (Private helper functions will be defined here)
+(define-private (is-valid-name (name (string-ascii 50)))
+  (let ((name-length (len name)))
+    (and (>= name-length MIN_NAME_LENGTH)
+         (<= name-length MAX_NAME_LENGTH))))
+
+;; Ensures URI is not empty
+(define-private (is-valid-uri (uri (string-ascii 256)))
+  (> (len uri) u0))
+
+(define-private (update-or-create-tipper (tipper principal) (stx-amount uint) (cheer-amount uint) (is-new-creator bool))
+  (let
+    (
+      (existing-tipper (map-get? tippers tipper))
+      (current-block stacks-block-height)
+    )
+    (match existing-tipper
+      tipper-data
+      ;; Update existing tipper
+      (map-set tippers tipper {
+        display-name: (get display-name tipper-data),
+        total-stx-given: (+ (get total-stx-given tipper-data) stx-amount),
+        total-cheer-given: (+ (get total-cheer-given tipper-data) cheer-amount),
+        creators-supported: (if is-new-creator 
+                              (+ (get creators-supported tipper-data) u1)
+                              (get creators-supported tipper-data)),
+        first-tip-at: (get first-tip-at tipper-data)
+      })
+      ;; Create new tipper
+      (begin
+        (map-set tippers tipper {
+          display-name: none,
+          total-stx-given: stx-amount,
+          total-cheer-given: cheer-amount,
+          creators-supported: u1,
+          first-tip-at: current-block
+        })
+        (var-set total-tippers (+ (var-get total-tippers) u1))
+        true
+      )
+    )
+  )
+)
+
+(define-private (is-new-supporter (tipper principal) (creator principal))
+  (let
+    (
+      (stx-history (default-to u0 (map-get? tip-history {tipper: tipper, creator: creator})))
+      (cheer-history-val (default-to u0 (map-get? cheer-history {tipper: tipper, creator: creator})))
+    )
+    (and (is-eq stx-history u0) (is-eq cheer-history-val u0))
+  )
+)
 
 
 ;; ============================================
 ;; Public Functions - Creator Management
 ;; ============================================
-;; (Creator registration and management functions will be implemented here)
+(define-public (register-creator (name (string-ascii 50)) (metadata-uri (string-ascii 256)))
+  (let
+    (
+      (caller tx-sender)
+      (current-block stacks-block-height)
+    )
+    (asserts! (is-valid-name name) ERR-INVALID-NAME)
+    
+    ;; Validate metadata URI is not empty
+    (asserts! (is-valid-uri metadata-uri) ERR-INVALID-URI)
+    
+    (asserts! (is-none (map-get? creators caller)) ERR-CREATOR-EXISTS)
+    
+    (map-set creators caller {
+      name: name,
+      metadata-uri: metadata-uri,
+      total-stx-received: u0,
+      total-cheer-received: u0,
+      supporters-count: u0,
+      created-at: current-block
+    })
+    
+    (var-set total-creators (+ (var-get total-creators) u1))
+    
+    (print {
+      event: "creator-registered",
+      creator: caller,
+      name: name,
+      metadata-uri: metadata-uri,
+      block-height: current-block
+    })
+    
+    (ok true)
+  )
+)
+
+(define-public (update-creator-metadata (new-metadata-uri (string-ascii 256)))
+  (let
+    (
+      (caller tx-sender)
+      (current-block stacks-block-height)
+      (creator-data (unwrap! (map-get? creators caller) ERR-CREATOR-NOT-FOUND))
+    )
+    (asserts! (is-valid-uri new-metadata-uri) ERR-INVALID-URI)
+    
+    (map-set creators caller (merge creator-data {
+      metadata-uri: new-metadata-uri
+    }))
+    
+    (print {
+      event: "creator-updated",
+      creator: caller,
+      new-metadata-uri: new-metadata-uri,
+      block-height: current-block
+    })
+    
+    (ok true)
+  )
+)
 
 
 ;; ============================================
 ;; Public Functions - Tipping with STX
 ;; ============================================
-;; (STX tipping functions will be implemented here)
+(define-public (tip-with-stx (creator principal) (amount uint))
+  (let
+    (
+      (tipper tx-sender)
+      (current-block stacks-block-height)
+      (creator-data (unwrap! (map-get? creators creator) ERR-CREATOR-NOT-FOUND))
+      (new-supporter (is-new-supporter tipper creator))
+      (current-tip-history (default-to u0 (map-get? tip-history {tipper: tipper, creator: creator})))
+    )
+    (asserts! (>= amount MIN_TIP_AMOUNT) ERR-INVALID-AMOUNT)
+    
+    ;; Prevent self-tipping
+    (asserts! (not (is-eq tipper creator)) ERR-SELF-TIP)
+    
+    ;; Transfer STX from tipper to creator
+    (try! (stx-transfer? amount tipper creator))
+    
+    ;; Update creator stats
+    (map-set creators creator (merge creator-data {
+      total-stx-received: (+ (get total-stx-received creator-data) amount),
+      supporters-count: (if new-supporter
+                          (+ (get supporters-count creator-data) u1)
+                          (get supporters-count creator-data))
+    }))
+    
+    ;; Update or create tipper record
+    (update-or-create-tipper tipper amount u0 new-supporter)
+    
+    (map-set tip-history {tipper: tipper, creator: creator} (+ current-tip-history amount))
+    
+    ;; Increment platform total STX tipped
+    (var-set total-stx-tipped (+ (var-get total-stx-tipped) amount))
+    
+    (print {
+      event: "tip-sent",
+      tipper: tipper,
+      creator: creator,
+      amount: amount,
+      type: "STX",
+      block-height: current-block
+    })
+    
+    (ok true)
+  )
+)
 
 
 ;; ============================================
 ;; Public Functions - Cheering with CHEER
 ;; ============================================
-;; (CHEER token cheering functions will be implemented here)
+(define-public (cheer-with-token (creator principal) (amount uint))
+  (let
+    (
+      (tipper tx-sender)
+      (current-block stacks-block-height)
+      (creator-data (unwrap! (map-get? creators creator) ERR-CREATOR-NOT-FOUND))
+      (new-supporter (is-new-supporter tipper creator))
+      (current-cheer-history (default-to u0 (map-get? cheer-history {tipper: tipper, creator: creator})))
+    )
+    ;; Validate amount is greater than zero
+    (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+    
+    ;; Prevent self-cheering
+    (asserts! (not (is-eq tipper creator)) ERR-SELF-TIP)
+    
+    (try! (contract-call? .cheer-token transfer amount tipper creator none))
+    
+    ;; Update creator stats
+    (map-set creators creator (merge creator-data {
+      total-cheer-received: (+ (get total-cheer-received creator-data) amount),
+      supporters-count: (if new-supporter
+                          (+ (get supporters-count creator-data) u1)
+                          (get supporters-count creator-data))
+    }))
+    
+    ;; Update or create tipper record
+    (update-or-create-tipper tipper u0 amount new-supporter)
+    
+    (map-set cheer-history {tipper: tipper, creator: creator} (+ current-cheer-history amount))
+    
+    (var-set total-cheer-tipped (+ (var-get total-cheer-tipped) amount))
+    
+    (print {
+      event: "cheer-sent",
+      tipper: tipper,
+      creator: creator,
+      amount: amount,
+      type: "CHEER",
+      block-height: current-block
+    })
+    
+    (ok true)
+  )
+)
 
 
 ;; ============================================
 ;; Public Functions - Leaderboard Management
 ;; ============================================
-;; (Leaderboard functions will be implemented here)
-
 
 ;; ============================================
 ;; Read-Only Functions - Creator Data
 ;; ============================================
-;; (Read-only functions for creator data will be implemented here)
+(define-read-only (get-creator-info (creator principal))
+  (map-get? creators creator)
+)
+
+(define-read-only (is-creator (user principal))
+  (is-some (map-get? creators user))
+)
+
+;; Used for landing page statistics
+(define-read-only (get-creator-count)
+  (ok (var-get total-creators))
+)
 
 
 ;; ============================================
 ;; Read-Only Functions - Tipper Data
 ;; ============================================
-;; (Read-only functions for tipper data will be implemented here)
+;; Returns u0 if no tips have been made
+(define-read-only (get-tip-amount (tipper principal) (creator principal))
+  (default-to u0 (map-get? tip-history {tipper: tipper, creator: creator}))
+)
+
+(define-read-only (get-cheer-amount (tipper principal) (creator principal))
+  (default-to u0 (map-get? cheer-history {tipper: tipper, creator: creator}))
+)
+
+(define-read-only (get-tipper-stats (tipper principal))
+  (map-get? tippers tipper)
+)
 
 
 ;; ============================================
 ;; Read-Only Functions - Leaderboards
 ;; ============================================
-;; (Read-only functions for leaderboards will be implemented here)
+;; Returns u0 if creator not found
+(define-read-only (calculate-creator-score (creator principal))
+  (match (map-get? creators creator)
+    creator-data
+    (+ (get total-stx-received creator-data) (get total-cheer-received creator-data))
+    u0
+  )
+)
+
+;; Returns u0 if tipper not found
+(define-read-only (calculate-tipper-score (tipper principal))
+  (match (map-get? tippers tipper)
+    tipper-data
+    (+ (get total-stx-given tipper-data) (get total-cheer-given tipper-data))
+    u0
+  )
+)
+
+(define-read-only (get-creator-rank (creator principal))
+  (match (map-get? creators creator)
+    creator-data
+    (ok (+ (get total-stx-received creator-data) (get total-cheer-received creator-data)))
+    ERR-CREATOR-NOT-FOUND
+  )
+)
+
+(define-read-only (get-tipper-rank (tipper principal))
+  (ok (match (map-get? tippers tipper)
+    tipper-data
+    (+ (get total-stx-given tipper-data) (get total-cheer-given tipper-data))
+    u0
+  ))
+)
+
+(define-read-only (get-platform-stats)
+  (ok {
+    total-creators: (var-get total-creators),
+    total-tippers: (var-get total-tippers),
+    total-stx-tipped: (var-get total-stx-tipped),
+    total-cheer-tipped: (var-get total-cheer-tipped)
+  })
+)
+
+;; Returns u0 if creator not found
+(define-read-only (get-creator-supporters-count (creator principal))
+  (match (map-get? creators creator)
+    creator-data
+    (ok (get supporters-count creator-data))
+    ERR-CREATOR-NOT-FOUND
+  )
+)
+
+(define-read-only (get-creators-supported (tipper principal))
+  (ok (match (map-get? tippers tipper)
+    tipper-data
+    (get creators-supported tipper-data)
+    u0
+  ))
+)
