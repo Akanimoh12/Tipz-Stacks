@@ -253,7 +253,103 @@
 ;; ============================================
 ;; Public Functions - SIP-010 Implementation
 ;; ============================================
-;; (SIP-010 standard functions will be implemented here)
+
+;; Transfer
+;; Transfers tokens from sender to recipient
+;; Implements SIP-010 transfer function for wallet compatibility
+;; @param amount: uint - Number of tokens to transfer
+;; @param sender: principal - The address sending tokens (must be tx-sender)
+;; @param recipient: principal - The address receiving tokens
+;; @param memo: optional buff 34 - Optional memo for the transaction
+;; @returns: (response bool uint) - (ok true) on success, error code on failure
+(define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
+  (begin
+    ;; Validate that sender is the transaction sender (security check)
+    (asserts! (is-eq sender tx-sender) ERR-NOT-AUTHORIZED)
+    
+    ;; Validate amount is greater than zero
+    (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+    
+    ;; Validate sender and recipient are different
+    (asserts! (not (is-eq sender recipient)) ERR-INVALID-AMOUNT)
+    
+    (let
+      (
+        ;; Get sender's current balance
+        (sender-balance (default-to u0 (map-get? token-balances sender)))
+        ;; Get recipient's current balance
+        (recipient-balance (default-to u0 (map-get? token-balances recipient)))
+      )
+      ;; Validate sender has sufficient balance
+      (asserts! (>= sender-balance amount) ERR-INSUFFICIENT-BALANCE)
+      
+      ;; Update sender's balance (deduct amount)
+      (map-set token-balances sender (- sender-balance amount))
+      
+      ;; Update recipient's balance (add amount)
+      (map-set token-balances recipient (+ recipient-balance amount))
+      
+      ;; Emit transfer event for off-chain tracking
+      (print {
+        event: "transfer",
+        sender: sender,
+        recipient: recipient,
+        amount: amount,
+        memo: memo
+      })
+      
+      ;; Return success
+      (ok true)
+    )
+  )
+)
+
+;; Get Name
+;; Returns the token name as per SIP-010 standard
+;; @returns: (response string-ascii uint) - Token name or error
+(define-public (get-name)
+  (ok TOKEN_NAME)
+)
+
+;; Get Symbol
+;; Returns the token symbol (ticker) as per SIP-010 standard
+;; @returns: (response string-ascii uint) - Token symbol or error
+(define-public (get-symbol)
+  (ok TOKEN_SYMBOL)
+)
+
+;; Get Decimals
+;; Returns the number of decimal places for token divisibility
+;; CHEER tokens are whole units only (no fractional tokens)
+;; @returns: (response uint uint) - Number of decimals (u0) or error
+(define-public (get-decimals)
+  (ok TOKEN_DECIMALS)
+)
+
+;; Get Balance
+;; Returns the token balance of a specific account
+;; Implements SIP-010 balance query for wallet integration
+;; @param account: principal - The address to query
+;; @returns: (response uint uint) - Account balance or error
+(define-public (get-balance (account principal))
+  (ok (default-to u0 (map-get? token-balances account)))
+)
+
+;; Get Total Supply
+;; Returns the total number of tokens in circulation
+;; Increases with daily claims, decreases with burns (if implemented)
+;; @returns: (response uint uint) - Total supply or error
+(define-public (get-total-supply)
+  (ok (var-get total-supply))
+)
+
+;; Get Token URI
+;; Returns optional metadata URI for token information
+;; Can point to IPFS or other decentralized storage
+;; @returns: (response (optional string-utf8) uint) - Token URI or error
+(define-public (get-token-uri)
+  (ok (var-get token-uri))
+)
 
 
 ;; ============================================
