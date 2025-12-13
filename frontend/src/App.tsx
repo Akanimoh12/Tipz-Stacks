@@ -9,6 +9,7 @@ import Leaderboards from './pages/Leaderboards'
 import MyProfile from './pages/MyProfile'
 import Claim from './pages/Claim'
 import RegisterCreator from './pages/RegisterCreator'
+import CreatorProfile from './pages/CreatorProfile'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -76,6 +77,16 @@ function App() {
               <ProtectedRoute>
                 <DashboardLayout>
                   <RegisterCreator />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/creator/:address"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <CreatorProfile />
                 </DashboardLayout>
               </ProtectedRoute>
             }

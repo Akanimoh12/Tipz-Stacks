@@ -115,13 +115,29 @@ export const useClaim = (): UseClaimReturn => {
       setBlocksUntilClaim(144); // Reset to full cooldown
       setTotalClaimed(prev => prev + 100);
       
-      // Refresh balances after successful claim
-      await refreshBalances();
+      console.log('Claim transaction broadcasted:', txId);
+      console.log('Waiting for transaction confirmation...');
       
-      // Refresh claim data after a short delay
+      // Show immediate optimistic feedback, but wait longer for blockchain confirmation
+      // Stacks blocks take ~10 minutes, but transaction should be in mempool quickly
+      
+      // Refresh balances after 15 seconds (should be in mempool by then)
+      setTimeout(async () => {
+        console.log('First balance refresh attempt (15s)...');
+        await refreshBalances();
+      }, 15000);
+      
+      // Refresh again after 30 seconds
+      setTimeout(async () => {
+        console.log('Second balance refresh attempt (30s)...');
+        await refreshBalances();
+      }, 30000);
+      
+      // Refresh claim data after 45 seconds
       setTimeout(() => {
+        console.log('Refreshing claim data (45s)...');
         refreshClaimData();
-      }, 2000);
+      }, 45000);
     } catch (err: any) {
       console.error('Claim error:', err);
       setError(err.message || 'Failed to claim tokens');

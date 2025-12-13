@@ -75,7 +75,25 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const fetchCheerBalance = useCallback(async (address: string) => {
     try {
-      const [contractAddress, contractName] = CHEER_TOKEN_CONTRACT.split('.');
+      // Parse contract identifier
+      let contractAddress: string;
+      let contractName: string;
+      
+      if (CHEER_TOKEN_CONTRACT.includes('.')) {
+        [contractAddress, contractName] = CHEER_TOKEN_CONTRACT.split('.');
+      } else {
+        // If only contract name provided, use DEPLOYER_ADDRESS
+        const deployerAddr = import.meta.env.VITE_DEPLOYER_ADDRESS;
+        contractAddress = deployerAddr;
+        contractName = CHEER_TOKEN_CONTRACT;
+      }
+      
+      console.log('Fetching CHEER balance:', {
+        userAddress: address,
+        contractAddress,
+        contractName,
+        fullContract: `${contractAddress}.${contractName}`
+      });
       
       const result = await fetchCallReadOnlyFunction({
         network: getNetwork(),
@@ -87,13 +105,20 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
 
       const jsonResult = cvToJSON(result);
+      console.log('CHEER balance response:', jsonResult);
+      
       const balance = jsonResult.value?.value || 0;
       const parsedBalance = parseInt(balance);
       
+      console.log('Parsed CHEER balance:', parsedBalance);
+      
       // Only update if balance changed
       if (lastBalances.current.cheer !== parsedBalance) {
+        console.log('Updating CHEER balance from', lastBalances.current.cheer, 'to', parsedBalance);
         setCheerBalance(parsedBalance);
         lastBalances.current.cheer = parsedBalance;
+      } else {
+        console.log('CHEER balance unchanged:', parsedBalance);
       }
       
       return parsedBalance;

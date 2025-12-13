@@ -105,9 +105,14 @@ const SuccessAnimation: React.FC<SuccessAnimationProps> = ({
         <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] mb-4">
           {amount} CHEER
         </div>
-        <p className="text-gray-500 text-sm mb-6">
-          Your tokens will be available shortly
-        </p>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-blue-800 font-medium mb-1">
+            ⏳ Transaction submitted!
+          </p>
+          <p className="text-xs text-blue-600">
+            Your balance will update automatically within 15-45 seconds once the transaction is confirmed on the blockchain.
+          </p>
+        </div>
 
         {/* Transaction Link */}
         {txId && (

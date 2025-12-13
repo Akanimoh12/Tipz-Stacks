@@ -37,11 +37,18 @@ const parseContractId = (fullId: string | undefined) => {
 
 const { address: CHEER_TOKEN_ADDRESS, name: CHEER_TOKEN_NAME } = parseContractId(CHEER_TOKEN_CONTRACT);
 
-console.log('Contract Config:', {
+console.log('=== Contract Service Initialized ===');
+console.log('Environment Variables:', {
+  DEPLOYER_ADDRESS,
+  CHEER_TOKEN_CONTRACT,
+  network: import.meta.env.VITE_STACKS_NETWORK
+});
+console.log('Parsed Contract Config:', {
   address: CHEER_TOKEN_ADDRESS,
   name: CHEER_TOKEN_NAME,
   fullId: `${CHEER_TOKEN_ADDRESS}.${CHEER_TOKEN_NAME}`
 });
+console.log('===================================');
 
 export interface ClaimStatus {
   canClaim: boolean;
