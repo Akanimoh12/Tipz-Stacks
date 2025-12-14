@@ -48,7 +48,7 @@ const HowItWorks: React.FC = () => {
       {/* Steps Timeline - Desktop Horizontal */}
       <div className="hidden lg:block relative mb-20">
         {/* Connecting Line */}
-        <div className="absolute top-10 left-0 right-0 h-1 bg-gradient-to-r from-[#FF6B35]/20 via-[#FF6B35]/40 to-[#FF6B35]/20"></div>
+        <div className="absolute top-10 left-0 right-0 h-1 bg-linear-to-r from-[#FF6B35]/20 via-[#FF6B35]/40 to-[#FF6B35]/20"></div>
         
         {/* Steps Grid */}
         <div className="grid grid-cols-5 gap-8 relative">

@@ -73,7 +73,7 @@ const StatItem: React.FC<StatItemProps> = ({ icon, value, label, suffix = '', pr
       ref={statRef}
       className="flex flex-col items-center text-center p-6 sm:p-8 bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
     >
-      <div className="mb-4 p-4 rounded-xl bg-gradient-to-br from-[#FF6B35]/10 to-[#FF8C42]/10">
+      <div className="mb-4 p-4 rounded-xl bg-linear-to-br from-[#FF6B35]/10 to-[#FF8C42]/10">
         {icon}
       </div>
       <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2">

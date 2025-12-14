@@ -154,7 +154,7 @@ export default function CreatorLeaderboard({
                   <Button
                     size="small"
                     onClick={() => onTipClick(creator)}
-                    className="!px-3 !py-1.5"
+                    className="px-3! py-1.5!"
                   >
                     <FiZap size={14} />
                     <span>Tip</span>

@@ -80,7 +80,7 @@ export const RegistrationSteps: React.FC<RegistrationStepsProps> = ({
 
               {/* Connector Line */}
               {index < steps.length - 1 && (
-                <div className="flex-1 h-1 mx-4 relative top-[-20px]">
+                <div className="flex-1 h-1 mx-4 relative -top-5">
                   <div className="h-full bg-gray-200 rounded">
                     <div
                       className={`h-full rounded transition-all duration-500 ${

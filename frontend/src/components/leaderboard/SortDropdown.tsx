@@ -70,7 +70,7 @@ export default function SortDropdown({ selectedSort, onSortChange, isCreatorBoar
                 <span className="text-xs text-gray-500">{option.description}</span>
               </div>
               {selectedSort === key && (
-                <FiCheck className="text-[#FF6B35] flex-shrink-0" />
+                <FiCheck className="text-[#FF6B35] shrink-0" />
               )}
             </button>
           ))}

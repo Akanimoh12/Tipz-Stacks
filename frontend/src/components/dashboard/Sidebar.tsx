@@ -53,7 +53,7 @@ const Sidebar: React.FC = () => {
             {isConnected ? (
               <>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF8C42] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-linear-to-br from-[#FF6B35] to-[#FF8C42] flex items-center justify-center">
                     <FiUser className="text-white text-lg" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -95,7 +95,7 @@ const Sidebar: React.FC = () => {
                       }`
                     }
                   >
-                    <item.icon className="text-xl flex-shrink-0" />
+                    <item.icon className="text-xl shrink-0" />
                     <span className="font-medium">{item.label}</span>
                   </NavLink>
                 </li>

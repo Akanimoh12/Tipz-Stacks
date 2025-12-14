@@ -45,11 +45,11 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon: Icon, title, descriptio
       }`}
     >
       {/* Orange accent line */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] rounded-t-2xl transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+      <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-[#FF6B35] to-[#FF8C42] rounded-t-2xl transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
 
       {/* Icon */}
       <div className="mb-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF6B35]/10 to-[#FF8C42]/10 group-hover:from-[#FF6B35]/20 group-hover:to-[#FF8C42]/20 transition-all duration-300">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-linear-to-br from-[#FF6B35]/10 to-[#FF8C42]/10 group-hover:from-[#FF6B35]/20 group-hover:to-[#FF8C42]/20 transition-all duration-300">
           <Icon className="text-3xl text-[#FF6B35] group-hover:scale-110 transition-transform duration-300" />
         </div>
       </div>

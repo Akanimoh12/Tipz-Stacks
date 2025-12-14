@@ -59,7 +59,7 @@ const Features: React.FC = () => {
 
       {/* Additional Benefits Section */}
       <div className="mt-16 sm:mt-20 md:mt-24">
-        <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-8 sm:p-12 border border-gray-200">
+        <div className="bg-linear-to-br from-gray-50 to-white rounded-3xl p-8 sm:p-12 border border-gray-200">
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center md:text-left">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#FF6B35]/10 mb-4">

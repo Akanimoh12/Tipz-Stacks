@@ -47,7 +47,7 @@ const StepCard: React.FC<StepCardProps> = ({ stepNumber, title, description, ico
     >
       {/* Step Number Badge */}
       <div className="relative mb-6">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF8C42] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+        <div className="w-20 h-20 rounded-full bg-linear-to-br from-[#FF6B35] to-[#FF8C42] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
           <span className="text-3xl font-bold text-white">{stepNumber}</span>
         </div>
         

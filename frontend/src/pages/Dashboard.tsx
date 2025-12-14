@@ -76,7 +76,7 @@ const Dashboard: React.FC = () => {
             <CardBody>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Link to="/discover" className="block">
-                  <button className="w-full p-4 bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-between">
+                  <button className="w-full p-4 bg-linear-to-r from-[#FF6B35] to-[#FF8C42] text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <FiSearch />
                       Discover Creators

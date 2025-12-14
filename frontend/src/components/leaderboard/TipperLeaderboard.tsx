@@ -227,7 +227,7 @@ export default function TipperLeaderboard({
                     variant="secondary"
                     size="small"
                     onClick={() => window.location.href = `/tipper/${tipper.address}`}
-                    className="!px-3 !py-1.5"
+                    className="px-3! py-1.5!"
                   >
                     <FiUser size={14} />
                     <span>View</span>

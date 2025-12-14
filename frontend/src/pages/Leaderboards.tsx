@@ -174,7 +174,7 @@ export default function Leaderboards() {
     <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-purple-600 bg-clip-text text-transparent mb-2">
+        <h1 className="text-4xl font-bold bg-linear-to-r from-orange-500 to-purple-600 bg-clip-text text-transparent mb-2">
           Leaderboards
         </h1>
         <p className="text-gray-600 text-lg">
@@ -286,7 +286,7 @@ export default function Leaderboards() {
           </p>
           <button
             onClick={clearFilters}
-            className="px-6 py-2 bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+            className="px-6 py-2 bg-linear-to-r from-[#FF6B35] to-[#FF8C42] text-white rounded-lg font-semibold hover:shadow-lg transition-all"
           >
             Clear all filters
           </button>

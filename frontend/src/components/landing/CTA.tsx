@@ -23,7 +23,7 @@ const CTA: React.FC = () => {
   return (
     <div className="relative overflow-hidden">
       {/* Orange Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35] to-[#FF8C42]"></div>
+      <div className="absolute inset-0 bg-linear-to-br from-[#FF6B35] to-[#FF8C42]"></div>
       
       {/* Decorative Elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>

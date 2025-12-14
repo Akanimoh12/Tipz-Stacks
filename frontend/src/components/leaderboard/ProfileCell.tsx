@@ -29,7 +29,7 @@ export default function ProfileCell({ address, name, profileImage, isCreator = t
       title={`View ${name}'s profile`}
     >
       {/* Profile Image */}
-      <div className="relative flex-shrink-0">
+      <div className="relative shrink-0">
         {profileImage && !imageError ? (
           <img
             src={profileImage}
@@ -38,7 +38,7 @@ export default function ProfileCell({ address, name, profileImage, isCreator = t
             className="w-10 h-10 rounded-full object-cover transition-transform group-hover:scale-110 border-2 border-gray-200"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm transition-transform group-hover:scale-110 border-2 border-gray-200">
+          <div className="w-10 h-10 rounded-full bg-linear-to-br from-orange-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm transition-transform group-hover:scale-110 border-2 border-gray-200">
             {name.charAt(0).toUpperCase()}
           </div>
         )}

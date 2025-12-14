@@ -46,7 +46,7 @@ export default function RegisterCreator() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-purple-50">
+    <div className="min-h-screen bg-linear-to-br from-orange-50 via-white to-purple-50">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -63,7 +63,7 @@ export default function RegisterCreator() {
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-orange-500 to-purple-600 bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold bg-linear-to-r from-orange-500 to-purple-600 bg-clip-text text-transparent mb-4">
             Become a Creator
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -108,11 +108,11 @@ export default function RegisterCreator() {
         </div>
 
         {/* Benefits Section */}
-        <div className="mt-12 bg-gradient-to-r from-orange-500 to-purple-600 rounded-2xl p-8 text-white">
+        <div className="mt-12 bg-linear-to-r from-orange-500 to-purple-600 rounded-2xl p-8 text-white">
           <h2 className="text-2xl font-bold mb-6 text-center">Why Join Tipz?</h2>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="flex gap-4">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
                   ✓
                 </div>
@@ -126,7 +126,7 @@ export default function RegisterCreator() {
             </div>
 
             <div className="flex gap-4">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
                   ✓
                 </div>
@@ -140,7 +140,7 @@ export default function RegisterCreator() {
             </div>
 
             <div className="flex gap-4">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
                   ✓
                 </div>
@@ -154,7 +154,7 @@ export default function RegisterCreator() {
             </div>
 
             <div className="flex gap-4">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
                   ✓
                 </div>
@@ -179,7 +179,7 @@ export default function RegisterCreator() {
             <p className="text-gray-600 mb-6">Welcome to Tipz! Your creator profile is now live.</p>
             <button
               onClick={handleSuccessClose}
-              className="w-full bg-gradient-to-r from-orange-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+              className="w-full bg-linear-to-r from-orange-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
             >
               View My Profile
             </button>

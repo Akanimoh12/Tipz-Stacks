@@ -157,13 +157,13 @@ const Hero: React.FC = () => {
           >
             <div className="relative">
               {/* Hero Illustration Placeholder */}
-              <div className="relative bg-gradient-to-br from-[#FF6B35]/10 to-[#FF8C42]/10 rounded-3xl p-8 sm:p-12 backdrop-blur-sm border border-[#FF6B35]/20">
+              <div className="relative bg-linear-to-br from-[#FF6B35]/10 to-[#FF8C42]/10 rounded-3xl p-8 sm:p-12 backdrop-blur-sm border border-[#FF6B35]/20">
                 {/* Decorative cards */}
                 <div className="space-y-6">
                   {/* Card 1 - Creator Profile */}
                   <div className="bg-white rounded-2xl p-6 shadow-lg transform rotate-2 hover:rotate-0 transition-transform duration-300">
                     <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF8C42]"></div>
+                      <div className="w-12 h-12 rounded-full bg-linear-to-br from-[#FF6B35] to-[#FF8C42]"></div>
                       <div>
                         <p className="font-semibold text-gray-900">Jane Artist</p>
                         <p className="text-sm text-gray-500">Digital Creator</p>
@@ -187,7 +187,7 @@ const Hero: React.FC = () => {
                       <FiZap className="text-[#FF6B35] text-xl" />
                     </div>
                     <div className="flex gap-3">
-                      <button className="flex-1 py-3 bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] text-white rounded-xl font-semibold hover:shadow-lg transition-shadow">
+                      <button className="flex-1 py-3 bg-linear-to-r from-[#FF6B35] to-[#FF8C42] text-white rounded-xl font-semibold hover:shadow-lg transition-shadow">
                         STX
                       </button>
                       <button className="flex-1 py-3 border-2 border-[#FF6B35] text-[#FF6B35] rounded-xl font-semibold hover:bg-[#FF6B35]/5 transition-colors">
