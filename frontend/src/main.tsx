@@ -1,3 +1,11 @@
+// Polyfill for BigInt to Number conversion issues
+if (typeof BigInt !== 'undefined') {
+  // @ts-ignore - Override BigInt.prototype.toJSON
+  BigInt.prototype.toJSON = function() {
+    return this.toString();
+  };
+}
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles/globals.css'

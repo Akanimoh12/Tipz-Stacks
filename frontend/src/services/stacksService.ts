@@ -1,14 +1,24 @@
 import { STACKS_TESTNET, STACKS_MAINNET } from '@stacks/network';
-import { NETWORK } from '@utils/constants';
+import type { StacksNetwork } from '@stacks/network';
+import { NETWORK, STACKS_API } from '@utils/constants';
 
-export const getNetwork = () => {
+export const getNetwork = (): StacksNetwork => {
   const isTestnet = NETWORK === 'testnet';
   
   if (isTestnet) {
-    return STACKS_TESTNET;
+    const network = { ...STACKS_TESTNET };
+    // Override the URL to use our configured API
+    if (STACKS_API) {
+      network.client.baseUrl = STACKS_API;
+    }
+    return network;
   }
   
-  return STACKS_MAINNET;
+  const network = { ...STACKS_MAINNET };
+  if (STACKS_API) {
+    network.client.baseUrl = STACKS_API;
+  }
+  return network;
 };
 
 export const getExplorerUrl = (txId: string): string => {
@@ -49,11 +59,19 @@ export const formatTokenAmount = (
   amount: number | string, 
   decimals: number = 6
 ): string => {
-  const value = typeof amount === 'string' ? parseFloat(amount) : amount;
+  // Convert BigInt or string to number safely
+  let value: number;
+  if (typeof amount === 'string') {
+    value = parseFloat(amount);
+  } else if (typeof amount === 'bigint') {
+    value = Number(amount);
+  } else {
+    value = amount;
+  }
   
   if (isNaN(value)) return '0';
   
-  const normalized = value / Math.pow(10, decimals);
+  const normalized = value / (10 ** decimals);
   
   if (normalized >= 1_000_000) {
     return `${(normalized / 1_000_000).toFixed(2)}M`;
