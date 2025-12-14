@@ -164,7 +164,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           name: 'Tipz Stacks',
           icon: window.location.origin + '/logo.png',
         },
-        onFinish: async (payload) => {
+        onFinish: async (payload: any) => {
           const address = payload.userSession.loadUserData().profile.stxAddress.testnet || 
                         payload.userSession.loadUserData().profile.stxAddress.mainnet;
           

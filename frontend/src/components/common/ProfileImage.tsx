@@ -55,7 +55,7 @@ export const ProfileImage: React.FC<ProfileImageProps> = ({
   if (!imageUrl || imageError) {
     return (
       <div
-        className={`${baseClasses} bg-gradient-to-br from-[#FF6B35] to-[#FF8C42] flex items-center justify-center`}
+        className={`${baseClasses} bg-linear-to-br from-[#FF6B35] to-[#FF8C42] flex items-center justify-center`}
       >
         <span className="text-white font-bold text-xl">
           {alt.charAt(0).toUpperCase()}

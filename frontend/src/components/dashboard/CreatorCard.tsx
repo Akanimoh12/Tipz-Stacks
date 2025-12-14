@@ -40,7 +40,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
         {/* Rank Badge */}
         {rank <= 3 && (
           <div className="absolute top-4 right-4">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF8C42] flex items-center justify-center text-white font-bold text-sm shadow-md">
+            <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#FF6B35] to-[#FF8C42] flex items-center justify-center text-white font-bold text-sm shadow-md">
               #{rank}
             </div>
           </div>
@@ -104,7 +104,7 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
         <div className="flex gap-2 mt-auto">
           <Button
             onClick={onTip}
-            className="flex-1 bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] text-white hover:shadow-lg"
+            className="flex-1 bg-linear-to-r from-[#FF6B35] to-[#FF8C42] text-white hover:shadow-lg"
             size="small"
           >
             Tip

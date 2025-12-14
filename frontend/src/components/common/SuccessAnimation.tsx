@@ -89,7 +89,7 @@ const SuccessAnimation: React.FC<SuccessAnimationProps> = ({
         {/* Success Icon */}
         <div className="mb-6 flex justify-center">
           <div className="relative">
-            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center animate-bounce-in">
+            <div className="w-20 h-20 bg-linear-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center animate-bounce-in">
               <FiCheck className="text-white text-4xl" strokeWidth={3} />
             </div>
             {/* Pulse effect */}
@@ -102,7 +102,7 @@ const SuccessAnimation: React.FC<SuccessAnimationProps> = ({
           🎉 Success!
         </h2>
         <p className="text-xl text-gray-600 mb-1">You claimed</p>
-        <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] mb-4">
+        <div className="text-5xl font-bold text-transparent bg-clip-text bg-linear-to-r from-[#FF6B35] to-[#FF8C42] mb-4">
           {amount} CHEER
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -130,7 +130,7 @@ const SuccessAnimation: React.FC<SuccessAnimationProps> = ({
         {/* Dismiss Button */}
         <button
           onClick={handleDismiss}
-          className="mt-6 w-full py-3 bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+          className="mt-6 w-full py-3 bg-linear-to-r from-[#FF6B35] to-[#FF8C42] text-white font-semibold rounded-xl hover:shadow-lg transition-all"
         >
           Continue
         </button>

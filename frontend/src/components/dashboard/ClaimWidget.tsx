@@ -27,7 +27,7 @@ const ClaimWidget: React.FC = memo(() => {
   // Show loading state
   if (isLoading && isConnected) {
     return (
-      <Card className="bg-gradient-to-r from-[#FF6B35]/5 to-[#FF8C42]/5 border-2 border-[#FF6B35]/20">
+      <Card className="bg-linear-to-r from-[#FF6B35]/5 to-[#FF8C42]/5 border-2 border-[#FF6B35]/20">
         <CardBody className="py-12">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF6B35] mb-3"></div>
@@ -41,10 +41,10 @@ const ClaimWidget: React.FC = memo(() => {
   // Show connect wallet prompt if not connected
   if (!isConnected) {
     return (
-      <Card className="bg-gradient-to-r from-[#FF6B35]/5 to-[#FF8C42]/5 border-2 border-[#FF6B35]/20">
+      <Card className="bg-linear-to-r from-[#FF6B35]/5 to-[#FF8C42]/5 border-2 border-[#FF6B35]/20">
         <CardBody>
           <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-[#FF6B35] to-[#FF8C42] rounded-2xl flex items-center justify-center">
+            <div className="shrink-0 w-16 h-16 bg-linear-to-br from-[#FF6B35] to-[#FF8C42] rounded-2xl flex items-center justify-center">
               <FiGift className="text-white text-3xl" />
             </div>
             <div className="flex-1">
@@ -78,13 +78,13 @@ const ClaimWidget: React.FC = memo(() => {
       )}
 
       {/* Main Claim Widget */}
-      <Card className="bg-gradient-to-r from-[#FF6B35]/5 to-[#FF8C42]/5 border-2 border-[#FF6B35]/20 hover:shadow-xl transition-shadow">
+      <Card className="bg-linear-to-r from-[#FF6B35]/5 to-[#FF8C42]/5 border-2 border-[#FF6B35]/20 hover:shadow-xl transition-shadow">
         <CardBody className="p-6 sm:p-8">
           <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
             {/* Icon Section */}
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="relative">
-                <div className="w-20 h-20 bg-gradient-to-br from-[#FF6B35] to-[#FF8C42] rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-20 h-20 bg-linear-to-br from-[#FF6B35] to-[#FF8C42] rounded-2xl flex items-center justify-center shadow-lg">
                   <FiGift className="text-white text-4xl" />
                 </div>
                 {canClaim && (
@@ -112,7 +112,7 @@ const ClaimWidget: React.FC = memo(() => {
               {/* Error Message */}
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-                  <FiAlertCircle className="text-red-500 flex-shrink-0 mt-0.5" />
+                  <FiAlertCircle className="text-red-500 shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <p className="text-sm text-red-700">{error}</p>
                     <button
@@ -181,8 +181,8 @@ const ClaimWidget: React.FC = memo(() => {
 
             {/* Stats Section (Right side on desktop) */}
             {totalClaimed > 0 && (
-              <div className="flex-shrink-0 w-full md:w-auto">
-                <div className="bg-white/50 rounded-xl p-4 text-center md:min-w-[140px]">
+              <div className="shrink-0 w-full md:w-auto">
+                <div className="bg-white/50 rounded-xl p-4 text-center md:min-w-35">
                   <div className="text-3xl font-bold text-[#FF6B35] mb-1">
                     {Math.floor(totalClaimed / 100)}
                   </div>

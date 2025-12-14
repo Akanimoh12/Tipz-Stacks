@@ -70,11 +70,11 @@ const Discover: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
+    <div className="min-h-screen bg-linear-to-br from-orange-50 via-white to-orange-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-linear-to-r from-[#FF6B35] to-[#FF8C42] bg-clip-text text-transparent mb-2">
             Discover Creators
           </h1>
           <p className="text-gray-600">
@@ -124,7 +124,7 @@ const Discover: React.FC = () => {
                 onClick={() => handleCategoryChange(category)}
                 className={`px-4 py-2 rounded-full font-medium transition-all ${
                   (filterCategory === category || (category === 'All' && !filterCategory))
-                    ? 'bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] text-white shadow-md'
+                    ? 'bg-linear-to-r from-[#FF6B35] to-[#FF8C42] text-white shadow-md'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -170,7 +170,7 @@ const Discover: React.FC = () => {
             </p>
             <Button
               onClick={() => navigate('/register-creator')}
-              className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] text-white"
+              className="bg-linear-to-r from-[#FF6B35] to-[#FF8C42] text-white"
             >
               Register as Creator
             </Button>

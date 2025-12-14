@@ -68,7 +68,7 @@ export const CreatorProfile: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#FF6B35] border-t-transparent"></div>
       </div>
     );
@@ -76,7 +76,7 @@ export const CreatorProfile: React.FC = () => {
 
   if (!creator) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center">
         <Card className="max-w-md w-full mx-4">
           <CardBody className="p-8 text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
@@ -100,7 +100,7 @@ export const CreatorProfile: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
+    <div className="min-h-screen bg-linear-to-br from-orange-50 via-white to-orange-50">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Back Button */}
         <button
@@ -115,7 +115,7 @@ export const CreatorProfile: React.FC = () => {
         <Card className="mb-6 overflow-hidden">
           {/* Banner Image */}
           {creator.metadata?.bannerImage && (
-            <div className="h-48 bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] relative">
+            <div className="h-48 bg-linear-to-r from-[#FF6B35] to-[#FF8C42] relative">
               <img
                 src={`https://gateway.pinata.cloud/ipfs/${creator.metadata.bannerImage}`}
                 alt="Banner"
@@ -124,7 +124,7 @@ export const CreatorProfile: React.FC = () => {
             </div>
           )}
           {!creator.metadata?.bannerImage && (
-            <div className="h-48 bg-gradient-to-r from-[#FF6B35] to-[#FF8C42]" />
+            <div className="h-48 bg-linear-to-r from-[#FF6B35] to-[#FF8C42]" />
           )}
 
           <CardBody className="p-8">
@@ -137,7 +137,7 @@ export const CreatorProfile: React.FC = () => {
                   size="hero"
                 />
                 {creator.rank <= 3 && (
-                  <div className="absolute -top-2 -right-2 w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF8C42] flex items-center justify-center text-white font-bold shadow-lg">
+                  <div className="absolute -top-2 -right-2 w-12 h-12 rounded-full bg-linear-to-br from-[#FF6B35] to-[#FF8C42] flex items-center justify-center text-white font-bold shadow-lg">
                     #{creator.rank}
                   </div>
                 )}
@@ -306,7 +306,7 @@ export const CreatorProfile: React.FC = () => {
               <CardBody className="p-6 space-y-3">
                 <Button
                   onClick={handleTip}
-                  className="w-full bg-gradient-to-r from-[#FF6B35] to-[#FF8C42] text-white flex items-center justify-center gap-2"
+                  className="w-full bg-linear-to-r from-[#FF6B35] to-[#FF8C42] text-white flex items-center justify-center gap-2"
                 >
                   <FiGift />
                   Tip with STX
