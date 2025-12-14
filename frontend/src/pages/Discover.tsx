@@ -2,9 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { FiSearch, FiFilter } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useCreators } from '../hooks/useCreators';
+import { useTipping } from '../hooks/useTipping';
 import { CreatorCard } from '../components/dashboard/CreatorCard';
 import { CreatorCardSkeletonGrid } from '../components/common/CreatorCardSkeleton';
 import { Button } from '../components/common/Button';
+import TipModal from '../components/dashboard/TipModal';
+import CheerModal from '../components/dashboard/CheerModal';
+import SuccessModal from '../components/dashboard/SuccessModal';
 
 const CATEGORIES = [
   'All',
@@ -40,6 +44,26 @@ const Discover: React.FC = () => {
     filterByCategory,
   } = useCreators();
 
+  const {
+    modalType,
+    isModalOpen,
+    selectedCreator,
+    amount,
+    isProcessing,
+    error: tippingError,
+    showSuccess,
+    transactionId,
+    openTipModal,
+    openCheerModal,
+    closeModal,
+    closeSuccess,
+    updateAmount,
+    executeTip,
+    executeCheer,
+    stxBalance,
+    cheerBalance,
+  } = useTipping();
+
   const [localSearchQuery, setLocalSearchQuery] = useState('');
 
   // Debounced search
@@ -59,14 +83,22 @@ const Discover: React.FC = () => {
     sortCreators(e.target.value as any);
   };
 
-  const handleTip = (creatorAddress: string) => {
-    // TODO: Open tip modal
-    console.log('Tip creator:', creatorAddress);
+  const handleTip = (creator: any) => {
+    openTipModal({
+      address: creator.address,
+      name: creator.name,
+      profileImage: creator.metadata?.profileImage,
+      totalStxReceived: creator.stats.totalStxReceived,
+    });
   };
 
-  const handleCheer = (creatorAddress: string) => {
-    // TODO: Open cheer modal
-    console.log('Cheer creator:', creatorAddress);
+  const handleCheer = (creator: any) => {
+    openCheerModal({
+      address: creator.address,
+      name: creator.name,
+      profileImage: creator.metadata?.profileImage,
+      totalCheerReceived: creator.stats.totalCheerReceived,
+    });
   };
 
   return (
@@ -192,11 +224,57 @@ const Discover: React.FC = () => {
                 supporterCount={creator.stats.supporterCount}
                 rank={creator.rank}
                 tags={creator.metadata?.tags}
-                onTip={() => handleTip(creator.address)}
-                onCheer={() => handleCheer(creator.address)}
+                onTip={() => handleTip(creator)}
+                onCheer={() => handleCheer(creator)}
               />
             ))}
           </div>
+        )}
+
+        {/* Tip Modal */}
+        {modalType === 'tip' && selectedCreator && (
+          <TipModal
+            isOpen={isModalOpen}
+            onClose={closeModal}
+            creator={selectedCreator}
+            amount={amount}
+            onAmountChange={updateAmount}
+            onSubmit={executeTip}
+            isProcessing={isProcessing}
+            error={tippingError}
+            userBalance={stxBalance}
+          />
+        )}
+
+        {/* Cheer Modal */}
+        {modalType === 'cheer' && selectedCreator && (
+          <CheerModal
+            isOpen={isModalOpen}
+            onClose={closeModal}
+            creator={selectedCreator}
+            amount={amount}
+            onAmountChange={updateAmount}
+            onSubmit={executeCheer}
+            isProcessing={isProcessing}
+            error={tippingError}
+            userBalance={cheerBalance}
+          />
+        )}
+
+        {/* Success Modal */}
+        {showSuccess && selectedCreator && (
+          <SuccessModal
+            isOpen={showSuccess}
+            onClose={closeSuccess}
+            type={modalType || 'tip'}
+            amount={amount}
+            creatorName={selectedCreator.name}
+            transactionId={transactionId}
+            onTipAnother={() => {
+              closeSuccess();
+              // Could navigate to discover page if not already there
+            }}
+          />
         )}
       </div>
     </div>

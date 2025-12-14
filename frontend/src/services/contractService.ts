@@ -4,10 +4,11 @@ import {
   PostConditionMode,
   cvToValue,
   standardPrincipalCV,
+  uintCV,
 } from '@stacks/transactions';
 import { openContractCall } from '@stacks/connect';
 import { getNetwork } from './stacksService';
-import { DEPLOYER_ADDRESS, CHEER_TOKEN_CONTRACT } from '@utils/constants';
+import { DEPLOYER_ADDRESS, CHEER_TOKEN_CONTRACT, TIPZ_CORE_CONTRACT } from '@utils/constants';
 
 // Contract identifiers
 // Parse contract identifier to handle both formats:
@@ -268,5 +269,218 @@ export const formatTimeRemaining = (blocks: number): string => {
     return `${minutes}m ${seconds}s`;
   } else {
     return `${seconds}s`;
+  }
+};
+
+// Tipping and Cheering Functions
+
+/**
+ * Send a tip to a creator with STX
+ * @param creatorAddress - Principal address of the creator
+ * @param amount - Amount in micro-STX (1 STX = 1,000,000 micro-STX)
+ * @param userAddress - Principal address of the sender
+ * @returns Transaction ID
+ */
+export const sendTipWithStx = async (
+  creatorAddress: string,
+  amount: number,
+  userAddress: string
+): Promise<string> => {
+  try {
+    const network = getNetwork();
+    const { address: tipzCoreAddress, name: tipzCoreName } = parseContractId(TIPZ_CORE_CONTRACT);
+
+    console.log('Sending STX tip:', {
+      creator: creatorAddress,
+      amount: `${amount} micro-STX (${amount / 1_000_000} STX)`,
+      from: userAddress,
+      contract: `${tipzCoreAddress}.${tipzCoreName}`,
+    });
+
+    const txOptions = {
+      contractAddress: tipzCoreAddress,
+      contractName: tipzCoreName,
+      functionName: 'tip-with-stx',
+      functionArgs: [
+        standardPrincipalCV(creatorAddress),
+        uintCV(amount),
+      ],
+      network,
+      anchorMode: AnchorMode.Any,
+      postConditionMode: PostConditionMode.Allow,
+      onFinish: (data: any) => {
+        console.log('Tip transaction broadcast:', data.txId);
+      },
+      onCancel: () => {
+        console.log('Tip transaction cancelled by user');
+        throw new Error('Transaction cancelled by user');
+      },
+    };
+
+    await openContractCall(txOptions);
+    
+    // Return a pending transaction ID (actual txId comes in onFinish callback)
+    return 'pending';
+  } catch (error: any) {
+    console.error('Error sending tip:', error);
+    throw new Error(error.message || 'Failed to send tip');
+  }
+};
+
+/**
+ * Send CHEER tokens to a creator
+ * @param creatorAddress - Principal address of the creator
+ * @param amount - Amount of CHEER tokens
+ * @param userAddress - Principal address of the sender
+ * @returns Transaction ID
+ */
+export const sendCheerWithToken = async (
+  creatorAddress: string,
+  amount: number,
+  userAddress: string
+): Promise<string> => {
+  try {
+    const network = getNetwork();
+    const { address: tipzCoreAddress, name: tipzCoreName } = parseContractId(TIPZ_CORE_CONTRACT);
+
+    console.log('Sending CHEER tokens:', {
+      creator: creatorAddress,
+      amount: `${amount} CHEER`,
+      from: userAddress,
+      contract: `${tipzCoreAddress}.${tipzCoreName}`,
+    });
+
+    const txOptions = {
+      contractAddress: tipzCoreAddress,
+      contractName: tipzCoreName,
+      functionName: 'cheer-with-token',
+      functionArgs: [
+        standardPrincipalCV(creatorAddress),
+        uintCV(amount),
+      ],
+      network,
+      anchorMode: AnchorMode.Any,
+      postConditionMode: PostConditionMode.Allow,
+      onFinish: (data: any) => {
+        console.log('Cheer transaction broadcast:', data.txId);
+      },
+      onCancel: () => {
+        console.log('Cheer transaction cancelled by user');
+        throw new Error('Transaction cancelled by user');
+      },
+    };
+
+    await openContractCall(txOptions);
+    
+    // Return a pending transaction ID (actual txId comes in onFinish callback)
+    return 'pending';
+  } catch (error: any) {
+    console.error('Error sending cheer:', error);
+    
+    // Handle specific CHEER errors
+    if (error.message?.includes('insufficient')) {
+      throw new Error('Insufficient CHEER balance');
+    }
+    
+    throw new Error(error.message || 'Failed to send cheer');
+  }
+};
+
+// Creator Registration Functions
+
+/**
+ * Register a new creator on the blockchain
+ * @param name - Creator name (3-50 characters)
+ * @param metadataUri - IPFS URI (ipfs://QmXXX...)
+ * @param userAddress - Principal address of the creator
+ * @returns Transaction ID
+ */
+export const registerCreatorOnChain = async (
+  name: string,
+  metadataUri: string,
+  userAddress: string
+): Promise<string> => {
+  try {
+    const network = getNetwork();
+    const { address: tipzCoreAddress, name: tipzCoreName } = parseContractId(TIPZ_CORE_CONTRACT);
+
+    console.log('Registering creator:', {
+      name,
+      metadataUri,
+      from: userAddress,
+      contract: `${tipzCoreAddress}.${tipzCoreName}`,
+    });
+
+    // Import required types for string values
+    const { stringAsciiCV } = await import('@stacks/transactions');
+
+    const txOptions = {
+      contractAddress: tipzCoreAddress,
+      contractName: tipzCoreName,
+      functionName: 'register-creator',
+      functionArgs: [
+        stringAsciiCV(name),
+        stringAsciiCV(metadataUri),
+      ],
+      network,
+      anchorMode: AnchorMode.Any,
+      postConditionMode: PostConditionMode.Allow,
+      onFinish: (data: any) => {
+        console.log('Creator registration transaction broadcast:', data.txId);
+      },
+      onCancel: () => {
+        console.log('Creator registration cancelled by user');
+        throw new Error('Registration cancelled by user');
+      },
+    };
+
+    await openContractCall(txOptions);
+    
+    // Return a pending transaction ID
+    return 'pending';
+  } catch (error: any) {
+    console.error('Error registering creator:', error);
+    
+    // Handle specific registration errors
+    if (error.message?.includes('already exists')) {
+      throw new Error('Creator already registered with this address');
+    }
+    if (error.message?.includes('invalid name')) {
+      throw new Error('Invalid creator name. Use 3-50 characters.');
+    }
+    
+    throw new Error(error.message || 'Failed to register creator');
+  }
+};
+
+/**
+ * Check if an address is already registered as a creator
+ * @param address - Principal address to check
+ * @returns Boolean indicating if address is registered
+ */
+export const isCreatorRegistered = async (address: string): Promise<boolean> => {
+  try {
+    const network = getNetwork();
+    const { address: tipzCoreAddress, name: tipzCoreName } = parseContractId(TIPZ_CORE_CONTRACT);
+
+    console.log('Checking creator registration for:', address);
+
+    const result = await fetchCallReadOnlyFunction({
+      contractAddress: tipzCoreAddress,
+      contractName: tipzCoreName,
+      functionName: 'get-creator-info',
+      functionArgs: [standardPrincipalCV(address)],
+      network,
+      senderAddress: address,
+    });
+
+    const value = cvToValue(result);
+    console.log('Creator registration check result:', value);
+
+    // If the result is not null/none, creator is registered
+    return value !== null && value !== undefined;
+  } catch (error) {
+    console.error('Error checking creator registration:', error);
+    return false;
   }
 };

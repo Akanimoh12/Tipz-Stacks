@@ -15,9 +15,13 @@ import {
   FiExternalLink,
 } from 'react-icons/fi';
 import { useCreators } from '../hooks/useCreators';
+import { useTipping } from '../hooks/useTipping';
 import { ProfileImage } from '../components/common/ProfileImage';
 import { Button } from '../components/common/Button';
 import { Card, CardBody } from '../components/common/Card';
+import TipModal from '../components/dashboard/TipModal';
+import CheerModal from '../components/dashboard/CheerModal';
+import SuccessModal from '../components/dashboard/SuccessModal';
 
 export const CreatorProfile: React.FC = () => {
   const { address } = useParams<{ address: string }>();
@@ -25,6 +29,26 @@ export const CreatorProfile: React.FC = () => {
   const { getCreator } = useCreators();
   const [creator, setCreator] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const {
+    modalType,
+    isModalOpen,
+    selectedCreator,
+    amount,
+    isProcessing,
+    error: tippingError,
+    showSuccess,
+    transactionId,
+    openTipModal,
+    openCheerModal,
+    closeModal,
+    closeSuccess,
+    updateAmount,
+    executeTip,
+    executeCheer,
+    stxBalance,
+    cheerBalance,
+  } = useTipping();
 
   useEffect(() => {
     const fetchCreator = async () => {
@@ -39,13 +63,23 @@ export const CreatorProfile: React.FC = () => {
   }, [address, getCreator]);
 
   const handleTip = () => {
-    // TODO: Open tip modal
-    console.log('Tip creator:', address);
+    if (!creator) return;
+    openTipModal({
+      address: creator.address,
+      name: creator.name,
+      profileImage: creator.metadata?.profileImage,
+      totalStxReceived: creator.stats.totalStxReceived,
+    });
   };
 
   const handleCheer = () => {
-    // TODO: Open cheer modal
-    console.log('Cheer creator:', address);
+    if (!creator) return;
+    openCheerModal({
+      address: creator.address,
+      name: creator.name,
+      profileImage: creator.metadata?.profileImage,
+      totalCheerReceived: creator.stats.totalCheerReceived,
+    });
   };
 
   const handleShare = async () => {
@@ -351,6 +385,48 @@ export const CreatorProfile: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Tip Modal */}
+      {modalType === 'tip' && selectedCreator && (
+        <TipModal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          creator={selectedCreator}
+          amount={amount}
+          onAmountChange={updateAmount}
+          onSubmit={executeTip}
+          isProcessing={isProcessing}
+          error={tippingError}
+          userBalance={stxBalance}
+        />
+      )}
+
+      {/* Cheer Modal */}
+      {modalType === 'cheer' && selectedCreator && (
+        <CheerModal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          creator={selectedCreator}
+          amount={amount}
+          onAmountChange={updateAmount}
+          onSubmit={executeCheer}
+          isProcessing={isProcessing}
+          error={tippingError}
+          userBalance={cheerBalance}
+        />
+      )}
+
+      {/* Success Modal */}
+      {showSuccess && selectedCreator && (
+        <SuccessModal
+          isOpen={showSuccess}
+          onClose={closeSuccess}
+          type={modalType || 'tip'}
+          amount={amount}
+          creatorName={selectedCreator.name}
+          transactionId={transactionId}
+        />
+      )}
     </div>
   );
 };
