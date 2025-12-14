@@ -21,10 +21,13 @@ export default defineConfig({
     open: true,
   },
   build: {
-    target: 'es2015',
+    target: 'es2020',
     outDir: 'dist',
     sourcemap: false,
     minify: 'terser',
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       output: {
         manualChunks: {
@@ -32,6 +35,11 @@ export default defineConfig({
           'stacks-vendor': ['@stacks/connect', '@stacks/transactions', '@stacks/network'],
         },
       },
+    },
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'es2020',
     },
   },
 })

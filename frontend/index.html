@@ -7,6 +7,37 @@
     <meta name="description" content="Tipz Stacks - Empower your favorite creators with STX and CHEER tokens on Stacks blockchain" />
     <meta name="theme-color" content="#FF6B35" />
     <title>Tipz Stacks - Creator Tipping Platform</title>
+    <script>
+      // Critical BigInt polyfill - must run before any modules load
+      (function() {
+        if (typeof BigInt !== 'undefined') {
+          // Override Math.pow to handle BigInt safely
+          const originalPow = Math.pow;
+          Math.pow = function(base, exponent) {
+            if (typeof base === 'bigint' || typeof exponent === 'bigint') {
+              return Number(BigInt(base) ** BigInt(exponent));
+            }
+            return originalPow.call(this, base, exponent);
+          };
+
+          // Add toJSON method to BigInt
+          BigInt.prototype.toJSON = function() {
+            return this.toString();
+          };
+
+          // Override Number constructor to handle BigInt
+          const originalNumber = Number;
+          window.Number = function(value) {
+            if (typeof value === 'bigint') {
+              return Number(value.toString());
+            }
+            return originalNumber(value);
+          };
+          Object.setPrototypeOf(window.Number, originalNumber);
+          Object.assign(window.Number, originalNumber);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
