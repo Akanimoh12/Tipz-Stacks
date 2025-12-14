@@ -77,18 +77,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const fetchCheerBalance = useCallback(async (address: string) => {
     try {
-      // Parse contract identifier
-      let contractAddress: string;
-      let contractName: string;
-      
-      if (CHEER_TOKEN_CONTRACT.includes('.')) {
-        [contractAddress, contractName] = CHEER_TOKEN_CONTRACT.split('.');
-      } else {
-        // If only contract name provided, use DEPLOYER_ADDRESS
-        const deployerAddr = import.meta.env.VITE_DEPLOYER_ADDRESS;
-        contractAddress = deployerAddr;
-        contractName = CHEER_TOKEN_CONTRACT;
-      }
+      const { address: contractAddress, name: contractName } = CHEER_TOKEN_CONTRACT;
       
       console.log('Fetching CHEER balance:', {
         userAddress: address,
@@ -201,6 +190,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     userSession.signUserOut();
   }, []);
 
+  // Load wallet session on mount (once)
   useEffect(() => {
     if (userSession.isUserSignedIn()) {
       try {
@@ -211,23 +201,30 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (address) {
           setWalletAddress(address);
           setIsConnected(true);
-          refreshBalances();
+          // Initial balance fetch
+          fetchStxBalance(address);
+          fetchCheerBalance(address);
         }
       } catch (err) {
         console.error('Error loading wallet session:', err);
       }
     }
-  }, [refreshBalances]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
+  // Auto-refresh balances every 30 seconds (only when connected)
   useEffect(() => {
     if (!walletAddress || !isConnected) return;
 
     const interval = setInterval(() => {
-      refreshBalances();
+      if (!isFetchingBalances.current) {
+        fetchStxBalance(walletAddress);
+        fetchCheerBalance(walletAddress);
+      }
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [walletAddress, isConnected, refreshBalances]);
+  }, [walletAddress, isConnected, fetchStxBalance, fetchCheerBalance]);
 
   const value: WalletContextType = {
     walletAddress,

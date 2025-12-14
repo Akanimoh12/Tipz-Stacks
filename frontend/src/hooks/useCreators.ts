@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchCreatorMetadata } from '@services/pinataService';
+import { getAllCreators, getCreatorInfo } from '@services/contractService';
 
-// Mock creator data for development (until contract is deployed)
 interface Creator {
   address: string;
   name: string;
@@ -44,8 +44,7 @@ export const useCreators = () => {
   const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 
   /**
-   * Fetch creators from contract
-   * TODO: Replace with actual contract call when deployed
+   * Fetch all registered creators from the contract
    */
   const fetchCreators = useCallback(async () => {
     // Check cache
@@ -59,202 +58,110 @@ export const useCreators = () => {
     setError(null);
 
     try {
-      console.log('Fetching creators from contract...');
+      console.log('Fetching creators from blockchain...');
       
-      // TODO: Replace with actual contract call
-      // const result = await fetchCallReadOnlyFunction({
-      //   network: getNetwork(),
-      //   contractAddress: TIPZ_CORE_ADDRESS,
-      //   contractName: TIPZ_CORE_NAME,
-      //   functionName: 'get-all-creators',
-      //   functionArgs: [],
-      //   senderAddress: 'SP000000000000000000002Q6VF78',
-      // });
+      // Get all creator addresses from contract events
+      const creatorAddresses = await getAllCreators();
+      
+      if (creatorAddresses.length === 0) {
+        console.log('No creators registered yet');
+        setCreators([]);
+        setFilteredCreators([]);
+        lastFetch.current = now;
+        setIsLoading(false);
+        return;
+      }
 
-      // Mock data for development
-      const mockCreators: Creator[] = [
-        {
-          address: 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
-          name: 'Digital Artist',
-          bio: 'Creating stunning digital art and NFTs on the blockchain. Passionate about decentralized creativity.',
-          rank: 1,
-          createdAt: new Date('2024-01-15'),
-          metadata: {
-            tags: ['Art & Design', 'Photography'],
-            socialLinks: {
-              twitter: 'https://twitter.com/digitalartist',
-              website: 'https://example.com/artist',
-            },
-            portfolio: [
-              {
-                title: 'NFT Collection 2024',
-                description: 'My latest collection of digital art NFTs',
-                url: 'https://example.com/portfolio',
-              },
-            ],
-          },
-          stats: {
-            totalStxReceived: 50.5,
-            totalCheerReceived: 1000,
-            supporterCount: 25,
-          },
-        },
-        {
-          address: 'ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG',
-          name: 'Indie Musician',
-          bio: 'Independent musician sharing original songs. Support my journey to create more music!',
-          rank: 2,
-          createdAt: new Date('2024-02-20'),
-          metadata: {
-            tags: ['Music'],
-            socialLinks: {
-              twitter: 'https://twitter.com/indiemusician',
-              website: 'https://example.com/music',
-            },
-            portfolio: [
-              {
-                title: 'Latest Album',
-                description: 'My newest indie album',
-                url: 'https://example.com/album',
-              },
-            ],
-          },
-          stats: {
-            totalStxReceived: 30.2,
-            totalCheerReceived: 750,
-            supporterCount: 18,
-          },
-        },
-        {
-          address: 'ST2JHG321N2SXQNQDQD4C3G3F8Q6RQW5TTPVVFNG',
-          name: 'Tech Writer',
-          bio: 'Writing about blockchain, Web3, and decentralized technologies. Tips help me create more content.',
-          rank: 3,
-          createdAt: new Date('2024-03-10'),
-          metadata: {
-            tags: ['Technology', 'Writing'],
-            socialLinks: {
-              twitter: 'https://twitter.com/techwriter',
-              github: 'https://github.com/techwriter',
-              website: 'https://example.com/blog',
-            },
-            portfolio: [
-              {
-                title: 'Web3 Blog Series',
-                description: 'Comprehensive guide to Web3 development',
-                url: 'https://example.com/web3-guide',
-              },
-            ],
-          },
-          stats: {
-            totalStxReceived: 25.8,
-            totalCheerReceived: 500,
-            supporterCount: 15,
-          },
-        },
-      ];
+      console.log(`Found ${creatorAddresses.length} creators`);
 
-      // If creators have metadata URIs, fetch from IPFS
-      const creatorsWithMetadata = await Promise.all(
-        mockCreators.map(async (creator) => {
-          if (creator.metadataUri) {
-            try {
-              const metadata = await fetchCreatorMetadata(creator.metadataUri);
-              return {
-                ...creator,
-                name: metadata.name || creator.name,
-                bio: metadata.bio || creator.bio,
-                metadata: {
-                  ...creator.metadata,
-                  profileImage: metadata.profileImage,
-                  bannerImage: metadata.bannerImage,
-                  socialLinks: metadata.socialLinks,
-                  tags: metadata.tags || creator.metadata?.tags,
-                  portfolio: metadata.portfolio || creator.metadata?.portfolio,
-                },
-              };
-            } catch (err) {
-              console.error('Error fetching metadata for creator:', creator.address, err);
-              return creator;
+      // Fetch detailed info for each creator
+      const creatorsData = await Promise.all(
+        creatorAddresses.map(async (address) => {
+          try {
+            const info = await getCreatorInfo(address);
+            if (!info) return null;
+
+            // Fetch metadata from IPFS if available
+            let metadata: any = {};
+            if (info.metadataUri) {
+              try {
+                const ipfsData = await fetchCreatorMetadata(info.metadataUri);
+                metadata = ipfsData;
+              } catch (err) {
+                console.warn(`Failed to fetch metadata for ${address}:`, err);
+              }
             }
+
+            return {
+              address,
+              name: info.name,
+              bio: metadata.bio || '',
+              rank: 0, // Will be calculated by sort
+              createdAt: new Date(info.createdAt * 1000),
+              metadataUri: info.metadataUri,
+              metadata: {
+                profileImage: metadata.profileImage,
+                bannerImage: metadata.bannerImage,
+                tags: metadata.tags || [],
+                socialLinks: metadata.socialLinks || {},
+                portfolio: metadata.portfolio || [],
+              },
+              stats: {
+                totalStxReceived: info.totalStxReceived / 1_000_000, // Convert from micro-STX
+                totalCheerReceived: info.totalCheerReceived,
+                supporterCount: info.supportersCount,
+              },
+            };
+          } catch (err) {
+            console.error(`Error fetching creator ${address}:`, err);
+            return null;
           }
-          return creator;
         })
       );
 
-      setCreators(creatorsWithMetadata);
-      setFilteredCreators(creatorsWithMetadata);
+      // Filter out null results
+      const validCreators: Creator[] = creatorsData.filter((c): c is NonNullable<typeof c> => c !== null);
+      
+      // Sort by total value (STX + CHEER)
+      validCreators.sort((a, b) => {
+        const aTotal = (a?.stats?.totalStxReceived || 0) + (a?.stats?.totalCheerReceived || 0);
+        const bTotal = (b?.stats?.totalStxReceived || 0) + (b?.stats?.totalCheerReceived || 0);
+        return bTotal - aTotal;
+      });
+
+      // Assign ranks
+      validCreators.forEach((creator) => {
+        if (creator) {
+          creator.rank = validCreators.indexOf(creator) + 1;
+        }
+      });
+
+      setCreators(validCreators);
+      setFilteredCreators(validCreators);
       lastFetch.current = now;
+      
+      console.log(`Successfully loaded ${validCreators.length} creators`);
     } catch (err) {
       console.error('Error fetching creators:', err);
-      setError('Failed to load creators. Please try again.');
+      // Don't show error if contract isn't deployed yet
+      if (err instanceof Error && (err.message.includes('contract') || err.message.includes('404'))) {
+        console.log('Contract not deployed yet - showing empty state');
+        setCreators([]);
+        setFilteredCreators([]);
+      } else {
+        setError('Failed to load creators. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [creators.length]);
-
-  /**
-   * Search creators by name
-   */
-  const searchCreators = useCallback((query: string) => {
-    setSearchQuery(query);
-    
-    if (!query.trim()) {
-      setFilteredCreators(creators);
-      return;
-    }
-
-    const lowercaseQuery = query.toLowerCase();
-    const filtered = creators.filter((creator) =>
-      creator.name.toLowerCase().includes(lowercaseQuery) ||
-      creator.bio.toLowerCase().includes(lowercaseQuery) ||
-      creator.metadata?.tags?.some(tag => tag.toLowerCase().includes(lowercaseQuery))
-    );
-
-    setFilteredCreators(filtered);
-  }, [creators]);
-
-  /**
-   * Sort creators
-   */
-  const sortCreators = useCallback((by: 'tips' | 'cheers' | 'newest' | 'name') => {
-    setSortBy(by);
-    
-    const sorted = [...filteredCreators].sort((a, b) => {
-      switch (by) {
-        case 'tips':
-          return b.stats.totalStxReceived - a.stats.totalStxReceived;
-        case 'cheers':
-          return b.stats.totalCheerReceived - a.stats.totalCheerReceived;
-        case 'newest':
-          return b.createdAt.getTime() - a.createdAt.getTime();
-        case 'name':
-          return a.name.localeCompare(b.name);
-        default:
-          return 0;
-      }
-    });
-
-    setFilteredCreators(sorted);
-  }, [filteredCreators]);
+  }, []);
 
   /**
    * Filter by category
    */
   const filterByCategory = useCallback((category?: string) => {
     setFilterCategory(category || '');
-    
-    if (!category || category === 'all') {
-      setFilteredCreators(creators);
-      return;
-    }
-
-    const filtered = creators.filter((creator) =>
-      creator.metadata?.tags?.some(tag => tag.toLowerCase().includes(category.toLowerCase()))
-    );
-
-    setFilteredCreators(filtered);
-  }, [creators]);
+  }, []);
 
   /**
    * Get single creator info
@@ -264,32 +171,58 @@ export const useCreators = () => {
   }, [creators]);
 
   /**
-   * Initial fetch
+   * Initial fetch - only once on mount
    */
   useEffect(() => {
     fetchCreators();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - run once on mount
 
   /**
-   * Apply search when query changes
+   * Apply filters when data or filter criteria changes
    */
   useEffect(() => {
-    searchCreators(searchQuery);
-  }, [searchQuery, searchCreators]);
+    let result = [...creators];
 
-  /**
-   * Apply sort when sort option changes
-   */
-  useEffect(() => {
-    sortCreators(sortBy);
-  }, [sortBy]);
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter((creator) =>
+        creator.name.toLowerCase().includes(query) ||
+        creator.bio.toLowerCase().includes(query) ||
+        creator.metadata?.tags?.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
 
-  /**
-   * Apply filter when category changes
-   */
-  useEffect(() => {
-    filterByCategory(filterCategory);
-  }, [filterCategory]);
+    // Apply category filter
+    if (filterCategory && filterCategory !== 'all') {
+      result = result.filter((creator) =>
+        creator.metadata?.tags?.some(tag => 
+          tag.toLowerCase().includes(filterCategory.toLowerCase())
+        )
+      );
+    }
+
+    // Apply sort
+    switch (sortBy) {
+      case 'tips':
+        result.sort((a, b) => b.stats.totalStxReceived - a.stats.totalStxReceived);
+        break;
+      case 'cheers':
+        result.sort((a, b) => b.stats.totalCheerReceived - a.stats.totalCheerReceived);
+        break;
+      case 'newest':
+        result.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        break;
+      case 'name':
+        result.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      default:
+        break;
+    }
+
+    setFilteredCreators(result);
+  }, [creators, searchQuery, filterCategory, sortBy]);
 
   return {
     creators: filteredCreators,

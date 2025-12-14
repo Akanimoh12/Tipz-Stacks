@@ -11,32 +11,8 @@ import { getNetwork } from './stacksService';
 import { DEPLOYER_ADDRESS, CHEER_TOKEN_CONTRACT, TIPZ_CORE_CONTRACT } from '@utils/constants';
 
 // Contract identifiers
-// Parse contract identifier to handle both formats:
-// Format 1: "cheer-token" (just contract name) - uses DEPLOYER_ADDRESS
-// Format 2: "ST1XXX.cheer-token" (full identifier) - extracts both parts
-const parseContractId = (fullId: string | undefined) => {
-  if (!fullId) {
-    console.warn('No contract identifier provided, using defaults');
-    return { address: DEPLOYER_ADDRESS || '', name: 'cheer-token' };
-  }
-  
-  // Check if it contains a period (full identifier format)
-  if (fullId.includes('.')) {
-    const parts = fullId.split('.');
-    return {
-      address: parts[0] || DEPLOYER_ADDRESS || '',
-      name: parts[1] || 'cheer-token'
-    };
-  }
-  
-  // Just contract name, use DEPLOYER_ADDRESS
-  return {
-    address: DEPLOYER_ADDRESS || '',
-    name: fullId
-  };
-};
-
-const { address: CHEER_TOKEN_ADDRESS, name: CHEER_TOKEN_NAME } = parseContractId(CHEER_TOKEN_CONTRACT);
+const CHEER_TOKEN_ADDRESS = CHEER_TOKEN_CONTRACT.address;
+const CHEER_TOKEN_NAME = CHEER_TOKEN_CONTRACT.name;
 
 console.log('=== Contract Service Initialized ===');
 console.log('Environment Variables:', {
@@ -288,7 +264,8 @@ export const sendTipWithStx = async (
 ): Promise<string> => {
   try {
     const network = getNetwork();
-    const { address: tipzCoreAddress, name: tipzCoreName } = parseContractId(TIPZ_CORE_CONTRACT);
+    const tipzCoreAddress = TIPZ_CORE_CONTRACT.address;
+    const tipzCoreName = TIPZ_CORE_CONTRACT.name;
 
     console.log('Sending STX tip:', {
       creator: creatorAddress,
@@ -341,7 +318,8 @@ export const sendCheerWithToken = async (
 ): Promise<string> => {
   try {
     const network = getNetwork();
-    const { address: tipzCoreAddress, name: tipzCoreName } = parseContractId(TIPZ_CORE_CONTRACT);
+    const tipzCoreAddress = TIPZ_CORE_CONTRACT.address;
+    const tipzCoreName = TIPZ_CORE_CONTRACT.name;
 
     console.log('Sending CHEER tokens:', {
       creator: creatorAddress,
@@ -402,7 +380,8 @@ export const registerCreatorOnChain = async (
 ): Promise<string> => {
   try {
     const network = getNetwork();
-    const { address: tipzCoreAddress, name: tipzCoreName } = parseContractId(TIPZ_CORE_CONTRACT);
+    const tipzCoreAddress = TIPZ_CORE_CONTRACT.address;
+    const tipzCoreName = TIPZ_CORE_CONTRACT.name;
 
     console.log('Registering creator:', {
       name,
@@ -461,7 +440,8 @@ export const registerCreatorOnChain = async (
 export const isCreatorRegistered = async (address: string): Promise<boolean> => {
   try {
     const network = getNetwork();
-    const { address: tipzCoreAddress, name: tipzCoreName } = parseContractId(TIPZ_CORE_CONTRACT);
+    const tipzCoreAddress = TIPZ_CORE_CONTRACT.address;
+    const tipzCoreName = TIPZ_CORE_CONTRACT.name;
 
     console.log('Checking creator registration for:', address);
 
@@ -482,5 +462,90 @@ export const isCreatorRegistered = async (address: string): Promise<boolean> => 
   } catch (error) {
     console.error('Error checking creator registration:', error);
     return false;
+  }
+};
+
+/**
+ * Get creator info from contract
+ * @param address - Creator principal address
+ * @returns Creator info or null
+ */
+export const getCreatorInfo = async (address: string) => {
+  try {
+    const network = getNetwork();
+    const result = await fetchCallReadOnlyFunction({
+      contractAddress: TIPZ_CORE_CONTRACT.address,
+      contractName: TIPZ_CORE_CONTRACT.name,
+      functionName: 'get-creator-info',
+      functionArgs: [standardPrincipalCV(address)],
+      network,
+      senderAddress: address,
+    });
+
+    const value = cvToValue(result);
+    if (!value) return null;
+
+    return {
+      name: value.name,
+      metadataUri: value['metadata-uri'],
+      totalStxReceived: Number(value['total-stx-received']),
+      totalCheerReceived: Number(value['total-cheer-received']),
+      supportersCount: Number(value['supporters-count']),
+      createdAt: Number(value['created-at']),
+    };
+  } catch (error) {
+    console.error('Error getting creator info:', error);
+    return null;
+  }
+};
+
+/**
+ * Fetch all creators from Stacks API using contract events
+ * This queries the blockchain API for creator-registered events
+ */
+export const getAllCreators = async (): Promise<string[]> => {
+  try {
+    const { address, name } = TIPZ_CORE_CONTRACT;
+    const contractId = `${address}.${name}`;
+    const apiUrl = import.meta.env.VITE_STACKS_API || 'https://api.testnet.hiro.so';
+    
+    // Query contract events for creator registrations
+    const response = await fetch(
+      `${apiUrl}/extended/v1/contract/${contractId}/events?limit=200&offset=0`
+    );
+
+    if (!response.ok) {
+      console.error('Failed to fetch contract events:', response.statusText);
+      return [];
+    }
+
+    const data = await response.json();
+    const creatorAddresses: string[] = [];
+
+    // Parse events to extract creator addresses
+    if (data.results && Array.isArray(data.results)) {
+      for (const event of data.results) {
+        if (event.contract_log?.value?.repr) {
+          const eventData = event.contract_log.value.repr;
+          // Look for creator-registered events
+          if (eventData.includes('creator-registered') || eventData.includes('event: \"creator-registered\"')) {
+            // Extract creator address from event
+            const creatorMatch = eventData.match(/creator: ([A-Z0-9]+)/);
+            if (creatorMatch && creatorMatch[1]) {
+              const address = creatorMatch[1];
+              if (!creatorAddresses.includes(address)) {
+                creatorAddresses.push(address);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    console.log('Found creators from events:', creatorAddresses);
+    return creatorAddresses;
+  } catch (error) {
+    console.error('Error fetching creators from API:', error);
+    return [];
   }
 };

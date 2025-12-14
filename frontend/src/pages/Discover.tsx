@@ -66,14 +66,17 @@ const Discover: React.FC = () => {
 
   const [localSearchQuery, setLocalSearchQuery] = useState('');
 
-  // Debounced search
+  // Debounced search to avoid excessive re-renders
   useEffect(() => {
     const timer = setTimeout(() => {
-      searchCreators(localSearchQuery);
+      if (localSearchQuery !== searchQuery) {
+        searchCreators(localSearchQuery);
+      }
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [localSearchQuery, searchCreators]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localSearchQuery]); // Only depend on localSearchQuery
 
   const handleCategoryChange = (category: string) => {
     filterByCategory(category === 'All' ? undefined : category);

@@ -1,11 +1,20 @@
 export const NETWORK = import.meta.env.VITE_STACKS_NETWORK || 'testnet';
-export const DEPLOYER_ADDRESS = import.meta.env.VITE_DEPLOYER_ADDRESS || '';
-export const CHEER_TOKEN_CONTRACT = import.meta.env.VITE_CHEER_TOKEN_CONTRACT || 'cheer-token';
-export const TIPZ_CORE_CONTRACT = import.meta.env.VITE_TIPZ_CORE_CONTRACT || 'tipz-core';
+export const DEPLOYER_ADDRESS = import.meta.env.VITE_DEPLOYER_ADDRESS || 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM';
 export const STACKS_API = import.meta.env.VITE_STACKS_API || 
   (NETWORK === 'mainnet' ? 'https://api.hiro.so' : 'https://api.testnet.hiro.so');
 export const PINATA_API_KEY = import.meta.env.VITE_PINATA_API_KEY;
 export const PINATA_SECRET = import.meta.env.VITE_PINATA_SECRET;
+
+// Contract configurations
+export const CHEER_TOKEN_CONTRACT = {
+  address: DEPLOYER_ADDRESS,
+  name: import.meta.env.VITE_CHEER_TOKEN_CONTRACT || 'cheer-token',
+};
+
+export const TIPZ_CORE_CONTRACT = {
+  address: DEPLOYER_ADDRESS,
+  name: import.meta.env.VITE_TIPZ_CORE_CONTRACT || 'tipz-core',
+};
 
 export const APP_NAME = 'Tipz Stacks';
 export const APP_DESCRIPTION = 'Empower your favorite creators on Stacks blockchain';
