@@ -58,7 +58,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       
       const data = await response.json();
-      const microStx = parseInt(data.stx.balance);
+      // Handle both string and number types, convert BigInt safely
+      const balanceStr = String(data.stx.balance);
+      const microStx = Number(balanceStr);
       
       // Only update if balance changed
       if (lastBalances.current.stx !== microStx) {
@@ -108,7 +110,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.log('CHEER balance response:', jsonResult);
       
       const balance = jsonResult.value?.value || 0;
-      const parsedBalance = parseInt(balance);
+      // Handle BigInt conversion safely
+      const balanceStr = String(balance);
+      const parsedBalance = Number(balanceStr);
       
       console.log('Parsed CHEER balance:', parsedBalance);
       

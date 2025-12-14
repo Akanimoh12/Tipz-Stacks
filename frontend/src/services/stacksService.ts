@@ -37,7 +37,7 @@ export const formatAddress = (address: string): string => {
 };
 
 export const microStxToStx = (microStx: number | string): number => {
-  const amount = typeof microStx === 'string' ? parseInt(microStx) : microStx;
+  const amount = typeof microStx === 'string' ? Number(microStx) : microStx;
   return amount / 1_000_000;
 };
 
