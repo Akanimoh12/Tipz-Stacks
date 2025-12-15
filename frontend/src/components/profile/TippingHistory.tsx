@@ -6,9 +6,10 @@ interface TipTransaction {
   creatorAddress: string;
   creatorName?: string;
   amount: number;
-  type: 'STX' | 'CHEER';
+  token: 'STX' | 'CHEER';
   timestamp: Date;
   txId: string;
+  status: 'confirmed' | 'pending' | 'failed';
   message?: string;
 }
 
@@ -42,7 +43,7 @@ const TippingHistory: React.FC<TippingHistoryProps> = ({ transactions, isLoading
   };
 
   const filteredTransactions = transactions
-    .filter(tx => filter === 'all' || tx.type === filter)
+    .filter(tx => filter === 'all' || tx.token === filter)
     .filter(tx => 
       searchQuery === '' ||
       tx.creatorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -149,11 +150,11 @@ const TippingHistory: React.FC<TippingHistoryProps> = ({ transactions, isLoading
                 {/* Timeline Dot */}
                 <div className="relative shrink-0">
                   <div className={`w-12 h-12 rounded-full border-4 border-white flex items-center justify-center text-xl shadow-lg ${
-                    tx.type === 'STX'
+                    tx.token === 'STX'
                       ? 'bg-linear-to-br from-orange-400 to-orange-600'
                       : 'bg-linear-to-br from-yellow-400 to-yellow-600'
                   }`}>
-                    {tx.type === 'STX' ? '💰' : '📣'}
+                    {tx.token === 'STX' ? '💰' : '📣'}
                   </div>
                   {index < filteredTransactions.length - 1 && (
                     <div className="absolute left-1/2 top-12 -translate-x-1/2 w-0.5 h-6 bg-gray-200 md:hidden" />
@@ -166,7 +167,7 @@ const TippingHistory: React.FC<TippingHistoryProps> = ({ transactions, isLoading
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-semibold text-gray-900">
-                          {tx.type === 'STX' ? 'Tipped' : 'Cheered'}
+                          {tx.token === 'STX' ? 'Tipped' : 'Cheered'}
                         </span>
                         <a
                           href={`/creator/${tx.creatorAddress}`}
@@ -176,7 +177,7 @@ const TippingHistory: React.FC<TippingHistoryProps> = ({ transactions, isLoading
                         </a>
                       </div>
                       <div className="text-2xl font-bold text-orange-500 mb-1">
-                        {tx.amount} {tx.type}
+                        {tx.amount} {tx.token}
                       </div>
                       {tx.message && (
                         <p className="text-sm text-gray-700 italic mb-2">"{tx.message}"</p>

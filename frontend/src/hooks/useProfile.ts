@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchCallReadOnlyFunction, cvToJSON, standardPrincipalCV } from '@stacks/transactions';
-import { getNetwork } from '../services/stacksService';
 import { TIPZ_CORE_CONTRACT } from '../utils/constants';
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes

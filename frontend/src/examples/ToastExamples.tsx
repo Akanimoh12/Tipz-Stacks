@@ -1,4 +1,7 @@
+// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Example: How to use Toast notifications in your components
+// This file contains example code snippets and is not meant to be error-free
 
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/common/Toast';
@@ -22,8 +25,8 @@ export const ExampleComponent = () => {
     const toastId = loading('Sending transaction...');
     
     try {
-      // Perform async operation
-      await someAsyncFunction();
+      // Perform async operation - replace with your actual function
+      await Promise.resolve();
       
       // Update to success
       updateToast(toastId, 'success', 'Transaction sent successfully!');
@@ -38,6 +41,9 @@ export const ExampleComponent = () => {
     info('New features coming soon!', 10000); // Custom duration
   };
 
+  // Use the handlers in your component
+  // handleSuccess(), handleError(), handleAsyncOperation(), handleInfo()
+
   return (
     <div>
       {/* Your component content */}
@@ -50,13 +56,15 @@ export const ExampleComponent = () => {
 
 // Example 5: Using in TipModal
 export const TipModalExample = () => {
-  const { toasts, loading, success, error, updateToast, removeToast } = useToast();
+  const { toasts, loading, updateToast, removeToast } = useToast();
+  const walletAddress = 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM'; // Example
 
   const handleTip = async (creatorAddress: string, amount: number) => {
     const toastId = loading('Sending tip...');
 
     try {
-      const txId = await sendTipWithStx(creatorAddress, amount, walletAddress);
+      // Replace with actual sendTipWithStx import
+      const txId = await Promise.resolve('0x1234...' as string);
       
       updateToast(
         toastId, 
@@ -84,7 +92,7 @@ export const TipModalExample = () => {
 };
 
 // Example 6: Global toast context (optional - for app-wide toasts)
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 
 const ToastContext = createContext<ReturnType<typeof useToast> | null>(null);
 

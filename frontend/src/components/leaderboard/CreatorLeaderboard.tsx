@@ -1,4 +1,4 @@
-import { useState, memo, useCallback } from 'react';
+import { useState, memo } from 'react';
 import RankBadge from './RankBadge';
 import ProfileCell from './ProfileCell';
 import { Button } from '../common/Button';

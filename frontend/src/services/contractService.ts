@@ -520,7 +520,7 @@ export const getAllCreators = async (): Promise<string[]> => {
       const data = await response.json();
       
       // Filter for creator-registered events
-      const creatorAddresses = data.results
+      const creatorAddresses: string[] = data.results
         .filter((event: any) => {
           return event.event_type === 'print_event' && 
                  event.contract_log?.value?.repr?.includes('creator-registered');
