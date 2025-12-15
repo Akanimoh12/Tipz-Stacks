@@ -2,6 +2,8 @@ import React, { memo } from 'react';
 import { FiGift, FiAlertCircle } from 'react-icons/fi';
 import { useClaim } from '../../hooks/useClaim';
 import { useWallet } from '../../hooks/useWallet';
+import { useSocialShare, useShareableUrl } from '../../hooks/useSocialShare';
+import { ShareModal } from '../social';
 import { Card, CardBody } from '../common/Card';
 import { Button } from '../common/Button';
 import ClaimCountdown from './ClaimCountdown';
@@ -23,6 +25,15 @@ const ClaimWidget: React.FC = memo(() => {
     clearError,
     clearSuccess,
   } = useClaim();
+
+  const {
+    isShareModalOpen,
+    shareData,
+    openShareModal,
+    closeShareModal,
+  } = useSocialShare();
+
+  const { createShareableUrl } = useShareableUrl();
 
   // Show loading state
   if (isLoading && isConnected) {
@@ -74,6 +85,25 @@ const ClaimWidget: React.FC = memo(() => {
           onDismiss={clearSuccess}
           autoDismiss={true}
           dismissDelay={5000}
+          onShare={() => {
+            const shareUrl = createShareableUrl('/claim', {
+              action: 'claim',
+            });
+            openShareModal({
+              type: 'claim',
+              url: shareUrl,
+            });
+          }}
+          showShare={true}
+        />
+      )}
+
+      {/* Share Modal */}
+      {shareData && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={closeShareModal}
+          shareData={shareData}
         />
       )}
 

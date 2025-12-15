@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useWallet } from '../hooks/useWallet';
 import { Heading, Paragraph } from '../components/common/Typography';
 import { Card, CardHeader, CardBody } from '../components/common/Card';
-import { Button } from '../components/common/Button';
+import { ActivityFeed } from '../components/dashboard';
 import { FiGift, FiSearch, FiAward, FiUser, FiArrowRight } from 'react-icons/fi';
 
 // Memoized StatCard component to prevent re-renders
@@ -149,22 +149,10 @@ const Dashboard: React.FC = () => {
             </CardBody>
           </Card>
 
-          {/* Featured Creators - Placeholder */}
-          <Card>
-            <CardHeader>
-              <Heading level={3}>Featured Creators</Heading>
-            </CardHeader>
-            <CardBody>
-              <Paragraph color="secondary" className="text-sm">
-                Featured creators will appear here. Discover amazing content creators to support!
-              </Paragraph>
-              <Link to="/discover" className="block mt-4">
-                <Button variant="secondary" className="w-full">
-                  Explore Creators
-                </Button>
-              </Link>
-            </CardBody>
-          </Card>
+          {/* Activity Feed */}
+          <div className="lg:col-span-2">
+            <ActivityFeed />
+          </div>
 
           {/* Pro Tip */}
           <Card variant="highlighted">

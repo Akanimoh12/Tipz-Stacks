@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { FiHome, FiSearch, FiAward, FiUser, FiGift, FiX } from 'react-icons/fi';
+import { FiHome, FiSearch, FiAward, FiUser, FiGift, FiX, FiList, FiTrendingUp } from 'react-icons/fi';
 import { useWallet } from '../../hooks/useWallet';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { BalanceDisplay } from '../common/BalanceDisplay';
@@ -14,6 +14,8 @@ const Sidebar: React.FC = () => {
     { icon: FiSearch, label: 'Discover Creators', path: '/discover' },
     { icon: FiAward, label: 'Leaderboards', path: '/leaderboards' },
     { icon: FiUser, label: 'My Profile', path: '/my-profile' },
+    { icon: FiList, label: 'Transactions', path: '/transactions' },
+    { icon: FiTrendingUp, label: 'Achievements', path: '/achievements' },
     { icon: FiGift, label: 'Claim CHEER', path: '/claim' },
   ];
 

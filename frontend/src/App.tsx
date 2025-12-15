@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { SidebarProvider } from './contexts/SidebarContext'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import DashboardLayout from './components/dashboard/DashboardLayout'
+import { ReferralBanner } from './components/social'
 import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
 import Discover from './pages/Discover'
@@ -10,12 +11,16 @@ import MyProfile from './pages/MyProfile'
 import Claim from './pages/Claim'
 import RegisterCreator from './pages/RegisterCreator'
 import CreatorProfile from './pages/CreatorProfile'
+import TransactionHistory from './pages/TransactionHistory'
+import TipperProfile from './pages/TipperProfile'
+import { Achievements } from './pages/Achievements'
 import NotFound from './pages/NotFound'
 
 function App() {
   return (
     <Router>
       <SidebarProvider>
+        <ReferralBanner />
         <Routes>
           {/* Public Route */}
           <Route path="/" element={<Landing />} />
@@ -87,6 +92,36 @@ function App() {
               <ProtectedRoute>
                 <DashboardLayout>
                   <CreatorProfile />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tipper/:address"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <TipperProfile />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/transactions"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <TransactionHistory />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/achievements"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <Achievements />
                 </DashboardLayout>
               </ProtectedRoute>
             }

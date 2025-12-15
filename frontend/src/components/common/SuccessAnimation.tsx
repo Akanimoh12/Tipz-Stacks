@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FiCheck, FiExternalLink } from 'react-icons/fi';
+import { FiCheck, FiExternalLink, FiShare2 } from 'react-icons/fi';
 import { getExplorerUrl } from '../../services/stacksService';
 
 interface SuccessAnimationProps {
@@ -8,6 +8,8 @@ interface SuccessAnimationProps {
   onDismiss?: () => void;
   autoDismiss?: boolean;
   dismissDelay?: number;
+  onShare?: () => void;
+  showShare?: boolean;
 }
 
 const SuccessAnimation: React.FC<SuccessAnimationProps> = ({
@@ -16,6 +18,8 @@ const SuccessAnimation: React.FC<SuccessAnimationProps> = ({
   onDismiss,
   autoDismiss = true,
   dismissDelay = 5000,
+  onShare,
+  showShare = true,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
@@ -114,23 +118,37 @@ const SuccessAnimation: React.FC<SuccessAnimationProps> = ({
           </p>
         </div>
 
-        {/* Transaction Link */}
-        {txId && (
-          <a
-            href={getExplorerUrl(txId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
-          >
-            <span>View Transaction</span>
-            <FiExternalLink className="text-sm" />
-          </a>
-        )}
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          {txId && (
+            <a
+              href={getExplorerUrl(txId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+            >
+              <span>View Transaction</span>
+              <FiExternalLink className="text-sm" />
+            </a>
+          )}
+          {showShare && onShare && (
+            <button
+              onClick={() => {
+                onShare();
+                handleDismiss();
+              }}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
+            >
+              <FiShare2 className="text-sm" />
+              <span>Share</span>
+            </button>
+          )}
+        </div>
 
         {/* Dismiss Button */}
         <button
           onClick={handleDismiss}
-          className="mt-6 w-full py-3 bg-linear-to-r from-[#FF6B35] to-[#FF8C42] text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+          className="w-full py-3 bg-linear-to-r from-[#FF6B35] to-[#FF8C42] text-white font-semibold rounded-xl hover:shadow-lg transition-all"
         >
           Continue
         </button>
