@@ -11,6 +11,8 @@ import TipperLeaderboard from '../components/leaderboard/TipperLeaderboard';
 import TipModal from '../components/dashboard/TipModal';
 import CheerModal from '../components/dashboard/CheerModal';
 import { FiRefreshCw, FiClock } from 'react-icons/fi';
+import { useLeaderboardMetaTags } from '../hooks/useMetaTags';
+import { SkeletonTable } from '../components/common/Skeleton';
 
 export default function Leaderboards() {
   const { walletAddress, stxBalance, cheerBalance } = useWallet();
@@ -39,6 +41,9 @@ export default function Leaderboards() {
   } = useTipping();
 
   const [activeTab, setActiveTab] = useState<'creators' | 'tippers'>('creators');
+
+  // Update meta tags based on active tab
+  useLeaderboardMetaTags(activeTab === 'creators' ? 'creator' : 'tipper');
 
   // Filter hook
   const {
@@ -252,14 +257,11 @@ export default function Leaderboards() {
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-red-700 flex items-center gap-2">
-            <span className="font-semibold">Error:</span>
-            {error}
-          </p>
-          <button
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+          <p className="text-red-800">{error}</p>
+          <button 
             onClick={refreshLeaderboards}
-            className="mt-2 text-red-600 hover:text-red-700 font-medium text-sm underline"
+            className="text-red-600 underline text-sm mt-2"
           >
             Try again
           </button>
@@ -268,9 +270,21 @@ export default function Leaderboards() {
 
       {/* Loading State */}
       {isLoading && creators.length === 0 && tippers.length === 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4" />
-          <p className="text-gray-600">Loading leaderboards...</p>
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <SkeletonTable />
+        </div>
+      )}
+
+      {/* Empty State - No Activity */}
+      {!isLoading && !error && creators.length === 0 && tippers.length === 0 && (
+        <div className="text-center py-16 bg-white rounded-lg shadow-sm">
+          <div className="text-6xl mb-4">🏆</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            No Activity Yet
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Be the first to start tipping creators and climb the leaderboard!
+          </p>
         </div>
       )}
 

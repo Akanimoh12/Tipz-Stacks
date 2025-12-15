@@ -22,6 +22,7 @@ import { Card, CardBody } from '../components/common/Card';
 import TipModal from '../components/dashboard/TipModal';
 import CheerModal from '../components/dashboard/CheerModal';
 import SuccessModal from '../components/dashboard/SuccessModal';
+import { useCreatorMetaTags } from '../hooks/useMetaTags';
 
 export const CreatorProfile: React.FC = () => {
   const { address } = useParams<{ address: string }>();
@@ -61,6 +62,19 @@ export const CreatorProfile: React.FC = () => {
 
     fetchCreator();
   }, [address, getCreator]);
+
+  // Update meta tags when creator data loads
+  useCreatorMetaTags(
+    creator?.name || '',
+    creator?.address || address || '',
+    {
+      tipsReceived: creator?.stats?.totalStxReceived || 0,
+      cheersReceived: creator?.stats?.totalCheerReceived || 0,
+      supporters: creator?.stats?.supportersCount || 0,
+      rank: creator?.rank || 999,
+    },
+    creator?.metadata?.profileImage
+  );
 
   const handleTip = () => {
     if (!creator) return;

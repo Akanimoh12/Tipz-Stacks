@@ -5,8 +5,8 @@ interface SupportedCreator {
   address: string;
   name: string;
   profileImage?: string;
-  totalGiven: number;
-  lastTipDate: Date;
+  totalTipped: number;
+  lastTipDate?: Date;
   tipCount: number;
 }
 
@@ -37,9 +37,9 @@ const SupportedCreators: React.FC<SupportedCreatorsProps> = ({
   const sortedCreators = [...creators].sort((a, b) => {
     switch (sortBy) {
       case 'amount':
-        return b.totalGiven - a.totalGiven;
+        return b.totalTipped - a.totalTipped;
       case 'recent':
-        return b.lastTipDate.getTime() - a.lastTipDate.getTime();
+        return (b.lastTipDate?.getTime() || 0) - (a.lastTipDate?.getTime() || 0);
       case 'alphabetical':
         return a.name.localeCompare(b.name);
       default:
@@ -150,7 +150,7 @@ const SupportedCreators: React.FC<SupportedCreatorsProps> = ({
                   {creator.name}
                 </Link>
                 <p className="text-xs text-gray-500 mb-2">
-                  Last tipped {getRelativeTime(creator.lastTipDate)}
+                  {creator.lastTipDate ? `Last tipped ${getRelativeTime(creator.lastTipDate)}` : 'No recent tips'}
                 </p>
               </div>
 
@@ -158,7 +158,7 @@ const SupportedCreators: React.FC<SupportedCreatorsProps> = ({
               <div className="bg-orange-50 rounded-lg p-3 mb-3">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-orange-500 mb-1">
-                    {creator.totalGiven.toFixed(2)}
+                    {creator.totalTipped.toFixed(2)}
                   </div>
                   <div className="text-xs text-gray-600">Total Given (STX)</div>
                 </div>

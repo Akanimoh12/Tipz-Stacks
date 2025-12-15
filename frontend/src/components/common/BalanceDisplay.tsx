@@ -84,6 +84,14 @@ export const BalanceDisplay: React.FC<BalanceDisplayProps> = memo(({
       )}
     </div>
   );
+}, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if variant or className changed
+  // Balance changes are handled by the hook internally
+  return (
+    prevProps.variant === nextProps.variant &&
+    prevProps.showRefresh === nextProps.showRefresh &&
+    prevProps.className === nextProps.className
+  );
 });
 
 BalanceDisplay.displayName = 'BalanceDisplay';

@@ -8,6 +8,7 @@ import TippingHistory from '../components/profile/TippingHistory';
 import SupportedCreators from '../components/profile/SupportedCreators';
 import EditProfileModal from '../components/profile/EditProfileModal';
 import ShareProfile from '../components/profile/ShareProfile';
+import { useTipperMetaTags } from '../hooks/useMetaTags';
 
 const TipperProfile: React.FC = () => {
   const { address } = useParams<{ address: string }>();
@@ -33,6 +34,19 @@ const TipperProfile: React.FC = () => {
       navigate('/');
     }
   }, [address, navigate]);
+
+  // Update meta tags when profile data loads
+  useTipperMetaTags(
+    profileData?.displayName || '',
+    address || '',
+    {
+      tipsGiven: profileData?.totalStxGiven || 0,
+      cheersGiven: profileData?.totalCheerGiven || 0,
+      creatorsSupported: profileData?.creatorsSupported || 0,
+      rank: profileData?.rank || 999,
+      achievements: achievements?.length || 0,
+    }
+  );
 
   const handleSaveProfile = async (_data: any) => {
     // Profile save implementation:

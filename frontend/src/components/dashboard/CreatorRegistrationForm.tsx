@@ -1,6 +1,8 @@
-import { useState, useRef } from 'react';
-import { FiUpload, FiX, FiPlus, FiTrash2, FiAlertCircle } from 'react-icons/fi';
+import { useState, useRef, useEffect } from 'react';
+import { FiUpload, FiX, FiPlus, FiTrash2, FiAlertCircle, FiCheck, FiInfo } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import { useRegistration } from '../../hooks/useRegistration';
+import { useWallet } from '../../hooks/useWallet';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import RegistrationSteps from './RegistrationSteps';
@@ -19,6 +21,8 @@ const CATEGORIES = [
 ];
 
 export default function CreatorRegistrationForm() {
+  const navigate = useNavigate();
+  const { walletAddress } = useWallet();
   const {
     currentStep,
     formData,
@@ -35,12 +39,26 @@ export default function CreatorRegistrationForm() {
     validateStep,
     nextStep,
     prevStep,
-    submitRegistration
+    submitRegistration,
+    // Real-time validation
+    isCheckingName,
+    nameAvailable,
+    alreadyRegistered,
+    checkAddressRegistration,
+    debouncedNameCheck,
   } = useRegistration();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  // Check if user is already registered on mount
+  useEffect(() => {
+    if (walletAddress) {
+      checkAddressRegistration(walletAddress);
+    }
+  }, [walletAddress, checkAddressRegistration]);
 
   // Handle image selection
   const onImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,30 +102,118 @@ export default function CreatorRegistrationForm() {
     await submitRegistration();
   };
 
+  // Handle name change with real-time validation
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    updateFormField('name', value);
+    
+    // Clear previous errors
+    setNameError(null);
+    
+    // Validate length
+    if (value.length > 0 && value.length < 3) {
+      setNameError('Name must be at least 3 characters');
+      return;
+    }
+    
+    if (value.length > 50) {
+      setNameError('Name must be less than 50 characters');
+      return;
+    }
+    
+    // Check availability after debounce (only if name is valid length)
+    if (value.length >= 3) {
+      debouncedNameCheck(value);
+    }
+  };
+
   // Render Step 1: Basic Info
   const renderBasicInfo = () => (
     <div className="space-y-6">
+      {/* Already Registered Warning */}
+      {alreadyRegistered && (
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+          <div className="flex items-start">
+            <FiInfo className="text-blue-500 mr-3 mt-0.5 shrink-0" size={20} />
+            <div className="flex-1">
+              <p className="text-blue-800 font-medium">Already Registered</p>
+              <p className="text-blue-700 text-sm mt-1">
+                You have already registered as a creator.
+              </p>
+              <button 
+                onClick={() => navigate(`/creator/${walletAddress}`)}
+                className="text-blue-600 underline text-sm mt-2 hover:text-blue-800"
+              >
+                View your profile →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Creator Name <span className="text-red-500">*</span>
         </label>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={(e) => updateFormField('name', e.target.value)}
-          placeholder="Enter your creator name"
-          maxLength={50}
-          className={`w-full px-4 py-3 border ${
-            validationErrors.name ? 'border-red-500' : 'border-gray-300'
-          } rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent`}
-        />
-        <div className="flex justify-between mt-1">
-          {validationErrors.name && (
-            <span className="text-sm text-red-500 flex items-center gap-1">
-              <FiAlertCircle size={14} />
-              {validationErrors.name}
-            </span>
+        <div className="relative">
+          <input
+            type="text"
+            value={formData.name}
+            onChange={handleNameChange}
+            placeholder="Enter your creator name"
+            maxLength={50}
+            disabled={alreadyRegistered}
+            className={`w-full px-4 py-3 pr-12 border ${
+              nameError ? 'border-red-500' : 
+              nameAvailable === true ? 'border-green-500' :
+              nameAvailable === false ? 'border-red-500' :
+              'border-gray-300'
+            } rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed`}
+          />
+          
+          {/* Loading indicator */}
+          {isCheckingName && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="animate-spin h-5 w-5 border-2 border-orange-500 border-t-transparent rounded-full" />
+            </div>
           )}
+          
+          {/* Success indicator */}
+          {!isCheckingName && nameAvailable === true && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+              <FiCheck size={20} />
+            </div>
+          )}
+          
+          {/* Error indicator */}
+          {!isCheckingName && nameAvailable === false && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+              <FiX size={20} />
+            </div>
+          )}
+        </div>
+        
+        <div className="flex justify-between mt-1">
+          <div className="flex-1">
+            {nameError && (
+              <span className="text-sm text-red-500 flex items-center gap-1">
+                <FiAlertCircle size={14} />
+                {nameError}
+              </span>
+            )}
+            {!nameError && nameAvailable === false && (
+              <span className="text-sm text-red-500 flex items-center gap-1">
+                <FiAlertCircle size={14} />
+                This name is already taken. Please choose another.
+              </span>
+            )}
+            {!nameError && nameAvailable === true && (
+              <span className="text-sm text-green-500 flex items-center gap-1">
+                <FiCheck size={14} />
+                Name is available!
+              </span>
+            )}
+          </div>
           <span className="text-sm text-gray-500 ml-auto">
             {formData.name.length}/50
           </span>
@@ -462,7 +568,12 @@ export default function CreatorRegistrationForm() {
           {currentStep < 4 ? (
             <Button
               onClick={handleNext}
-              disabled={isUploading || isRegistering}
+              disabled={
+                isUploading || 
+                isRegistering || 
+                alreadyRegistered ||
+                (currentStep === 1 && (!formData.name || nameAvailable !== true || !formData.bio))
+              }
               className="flex-1"
             >
               Next
@@ -470,7 +581,15 @@ export default function CreatorRegistrationForm() {
           ) : (
             <Button
               onClick={handleSubmit}
-              disabled={isUploading || isRegistering}
+              disabled={
+                isUploading || 
+                isRegistering || 
+                alreadyRegistered || 
+                !formData.name || 
+                nameAvailable !== true ||
+                !formData.bio ||
+                !formData.profileImage
+              }
               loading={isUploading || isRegistering}
               className="flex-1"
             >

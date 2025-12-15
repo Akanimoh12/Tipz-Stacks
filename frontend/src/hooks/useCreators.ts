@@ -46,10 +46,10 @@ export const useCreators = () => {
   /**
    * Fetch all registered creators from the contract
    */
-  const fetchCreators = useCallback(async () => {
+  const fetchCreators = useCallback(async (forceRefresh = false) => {
     // Check cache
     const now = Date.now();
-    if (now - lastFetch.current < CACHE_DURATION && creators.length > 0) {
+    if (!forceRefresh && now - lastFetch.current < CACHE_DURATION && creators.length > 0) {
       console.log('Using cached creators data');
       return;
     }
@@ -72,89 +72,93 @@ export const useCreators = () => {
         return;
       }
 
-      console.log(`Found ${creatorAddresses.length} creators`);
+      console.log(`Found ${creatorAddresses.length} creator addresses:`, creatorAddresses);
 
-      // Fetch detailed info for each creator
-      const creatorsData = await Promise.all(
-        creatorAddresses.map(async (address) => {
-          try {
-            const info = await getCreatorInfo(address);
-            if (!info) return null;
-
-            // Fetch metadata from IPFS if available
-            let metadata: any = {};
-            if (info.metadataUri) {
-              try {
-                const ipfsData = await fetchCreatorMetadata(info.metadataUri);
-                metadata = ipfsData;
-              } catch (err) {
-                console.warn(`Failed to fetch metadata for ${address}:`, err);
-              }
-            }
-
-            return {
-              address,
-              name: info.name,
-              bio: metadata.bio || '',
-              rank: 0, // Will be calculated by sort
-              createdAt: new Date(info.createdAt * 1000),
-              metadataUri: info.metadataUri,
-              metadata: {
-                profileImage: metadata.profileImage,
-                bannerImage: metadata.bannerImage,
-                tags: metadata.tags || [],
-                socialLinks: metadata.socialLinks || {},
-                portfolio: metadata.portfolio || [],
-              },
-              stats: {
-                totalStxReceived: info.totalStxReceived / 1_000_000, // Convert from micro-STX
-                totalCheerReceived: info.totalCheerReceived,
-                supporterCount: info.supportersCount,
-              },
-            };
-          } catch (err) {
-            console.error(`Error fetching creator ${address}:`, err);
-            return null;
+      // Fetch detailed info for each creator (with progress logging)
+      const creatorsData: (Creator | null)[] = [];
+      
+      for (let i = 0; i < creatorAddresses.length; i++) {
+        const address = creatorAddresses[i];
+        console.log(`Fetching creator ${i + 1}/${creatorAddresses.length}: ${address}`);
+        
+        try {
+          const info = await getCreatorInfo(address);
+          
+          if (!info) {
+            console.warn(`No info found for ${address}`);
+            continue;
           }
-        })
-      );
 
-      // Filter out null results
-      const validCreators: Creator[] = creatorsData.filter((c): c is NonNullable<typeof c> => c !== null);
+          console.log(`Creator info for ${address}:`, info);
+
+          // Fetch metadata from IPFS if available
+          let metadata: any = {};
+          if (info.metadataUri) {
+            try {
+              console.log(`Fetching metadata from IPFS: ${info.metadataUri}`);
+              const ipfsData = await fetchCreatorMetadata(info.metadataUri);
+              metadata = ipfsData;
+            } catch (err) {
+              console.warn(`Failed to fetch metadata for ${address}:`, err);
+              // Continue without metadata
+            }
+          }
+
+          const creatorData: Creator = {
+            address,
+            name: info.name,
+            bio: metadata.bio || 'No bio provided',
+            rank: 0, // Will be calculated later
+            createdAt: new Date(info.createdAt * 1000),
+            metadataUri: info.metadataUri,
+            metadata: {
+              profileImage: metadata.profileImage,
+              bannerImage: metadata.bannerImage,
+              tags: metadata.tags || [],
+              socialLinks: metadata.socialLinks || {},
+              portfolio: metadata.portfolio || [],
+            },
+            stats: {
+              totalStxReceived: info.totalStxReceived / 1_000_000, // Convert from micro-STX
+              totalCheerReceived: info.totalCheerReceived,
+              supporterCount: info.supportersCount,
+            },
+          };
+
+          creatorsData.push(creatorData);
+        } catch (err) {
+          console.error(`Error fetching creator ${address}:`, err);
+        }
+      }
+
+      // Filter out nulls
+      const validCreators = creatorsData.filter((c): c is Creator => c !== null);
+      
+      console.log(`Successfully loaded ${validCreators.length} creators with full data`);
       
       // Sort by total value (STX + CHEER)
       validCreators.sort((a, b) => {
-        const aTotal = (a?.stats?.totalStxReceived || 0) + (a?.stats?.totalCheerReceived || 0);
-        const bTotal = (b?.stats?.totalStxReceived || 0) + (b?.stats?.totalCheerReceived || 0);
+        const aTotal = a.stats.totalStxReceived + (a.stats.totalCheerReceived / 100); // Weight CHEER less
+        const bTotal = b.stats.totalStxReceived + (b.stats.totalCheerReceived / 100);
         return bTotal - aTotal;
       });
 
       // Assign ranks
-      validCreators.forEach((creator) => {
-        if (creator) {
-          creator.rank = validCreators.indexOf(creator) + 1;
-        }
+      validCreators.forEach((creator, index) => {
+        creator.rank = index + 1;
       });
 
       setCreators(validCreators);
       setFilteredCreators(validCreators);
       lastFetch.current = now;
       
-      console.log(`Successfully loaded ${validCreators.length} creators`);
     } catch (err) {
       console.error('Error fetching creators:', err);
-      // Don't show error if contract isn't deployed yet
-      if (err instanceof Error && (err.message.includes('contract') || err.message.includes('404'))) {
-        console.log('Contract not deployed yet - showing empty state');
-        setCreators([]);
-        setFilteredCreators([]);
-      } else {
-        setError('Failed to load creators. Please try again.');
-      }
+      setError(err instanceof Error ? err.message : 'Failed to load creators');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [creators.length]);
 
   /**
    * Filter by category
@@ -171,10 +175,19 @@ export const useCreators = () => {
   }, [creators]);
 
   /**
-   * Initial fetch - only once on mount
+   * Initial fetch and auto-refresh setup
    */
   useEffect(() => {
+    // Initial fetch
     fetchCreators();
+
+    // Set up auto-refresh every 2 minutes
+    const interval = setInterval(() => {
+      console.log('Auto-refreshing creators...');
+      fetchCreators(true); // Force refresh
+    }, 2 * 60 * 1000); // 2 minutes
+
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - run once on mount
 

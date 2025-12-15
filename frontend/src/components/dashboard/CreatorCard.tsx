@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { FiUsers } from 'react-icons/fi';
 import { ProfileImage } from '../common/ProfileImage';
@@ -19,7 +19,7 @@ interface CreatorCardProps {
   onCheer?: () => void;
 }
 
-export const CreatorCard: React.FC<CreatorCardProps> = ({
+export const CreatorCard: React.FC<CreatorCardProps> = memo(({
   address,
   name,
   bio,
@@ -121,4 +121,17 @@ export const CreatorCard: React.FC<CreatorCardProps> = ({
       </CardBody>
     </Card>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render if creator data changed
+  return (
+    prevProps.address === nextProps.address &&
+    prevProps.name === nextProps.name &&
+    prevProps.totalStxReceived === nextProps.totalStxReceived &&
+    prevProps.totalCheerReceived === nextProps.totalCheerReceived &&
+    prevProps.supporterCount === nextProps.supporterCount &&
+    prevProps.rank === nextProps.rank &&
+    prevProps.profileImage === nextProps.profileImage
+  );
+});
+
+CreatorCard.displayName = 'CreatorCard';

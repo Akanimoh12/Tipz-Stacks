@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useConnect } from '@stacks/connect-react';
 import { AppConfig, UserSession } from '@stacks/connect';
 import { 
@@ -154,18 +154,34 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           icon: window.location.origin + '/logo.png',
         },
         onFinish: async (payload: any) => {
-          const address = payload.userSession.loadUserData().profile.stxAddress.testnet || 
-                        payload.userSession.loadUserData().profile.stxAddress.mainnet;
+          const userData = payload.userSession.loadUserData();
+          const stxAddresses = userData.profile.stxAddress;
           
-          if (address) {
-            setWalletAddress(address);
-            setIsConnected(true);
-            
-            await Promise.all([
-              fetchStxBalance(address),
-              fetchCheerBalance(address),
-            ]);
+          // ALWAYS use testnet address since app is on testnet
+          const address = stxAddresses.testnet;
+          
+          if (!address) {
+            setError('Please switch your wallet to Testnet network. This app is deployed on Stacks Testnet.');
+            setIsLoading(false);
+            return;
           }
+          
+          // Validate address format
+          if (!address.startsWith('ST')) {
+            setError('Invalid testnet address. Please ensure your wallet is on Testnet.');
+            setIsLoading(false);
+            return;
+          }
+          
+          console.log('Connected to testnet address:', address);
+          setWalletAddress(address);
+          setIsConnected(true);
+          
+          await Promise.all([
+            fetchStxBalance(address),
+            fetchCheerBalance(address),
+          ]);
+          
           setIsLoading(false);
         },
         onCancel: () => {
@@ -195,15 +211,21 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (userSession.isUserSignedIn()) {
       try {
         const userData = userSession.loadUserData();
-        const address = userData.profile.stxAddress.testnet || 
-                      userData.profile.stxAddress.mainnet;
+        const stxAddresses = userData.profile.stxAddress;
         
-        if (address) {
+        // ALWAYS use testnet address since app is on testnet
+        const address = stxAddresses.testnet;
+        
+        if (address && address.startsWith('ST')) {
+          console.log('Restoring testnet session:', address);
           setWalletAddress(address);
           setIsConnected(true);
           // Initial balance fetch
           fetchStxBalance(address);
           fetchCheerBalance(address);
+        } else {
+          console.warn('No valid testnet address found in session');
+          userSession.signUserOut();
         }
       } catch (err) {
         console.error('Error loading wallet session:', err);
@@ -226,7 +248,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => clearInterval(interval);
   }, [walletAddress, isConnected, fetchStxBalance, fetchCheerBalance]);
 
-  const value: WalletContextType = {
+  // Memoize context value to prevent unnecessary re-renders
+  const value: WalletContextType = useMemo(() => ({
     walletAddress,
     isConnected,
     network,
@@ -237,7 +260,18 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     connectWallet,
     disconnectWallet,
     refreshBalances,
-  };
+  }), [
+    walletAddress,
+    isConnected,
+    network,
+    stxBalance,
+    cheerBalance,
+    isLoading,
+    error,
+    connectWallet,
+    disconnectWallet,
+    refreshBalances,
+  ]);
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 };

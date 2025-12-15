@@ -1,0 +1,422 @@
+/**
+ * Example Integration: Complete Social Sharing Flow
+ * Shows how to integrate all Open Graph features together
+ */
+
+import { useState, useRef } from 'react';
+import { useParams } from 'react-router-dom';
+import { useCreatorMetaTags } from '../hooks/useMetaTags';
+import { TransactionCard, AchievementCard, ProfileCard, createCreatorStats } from '../components/social';
+import { generateAndCacheImage, downloadImage } from '../utils/ogImageGenerator';
+import { useSocialShare } from '../hooks/useSocialShare';
+
+/**
+ * Example 1: Creator Profile with Social Sharing
+ */
+export function CreatorProfileExample() {
+  const { address } = useParams();
+  const [creator, setCreator] = useState<any>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const profileCardRef = useRef<HTMLDivElement>(null);
+
+  // Automatically set meta tags for this page
+  useCreatorMetaTags(
+    creator?.name || '',
+    creator?.address || address || '',
+    {
+      tipsReceived: creator?.stats?.totalStxReceived || 0,
+      cheersReceived: creator?.stats?.totalCheerReceived || 0,
+      supporters: creator?.stats?.supportersCount || 0,
+      rank: creator?.rank || 999,
+    },
+    creator?.metadata?.profileImage
+  );
+
+  const handleShareProfile = async () => {
+    if (!profileCardRef.current || !creator) return;
+
+    try {
+      // Generate shareable image
+      const dataUrl = await generateAndCacheImage(
+        profileCardRef.current,
+        `creator_profile_${creator.address}`
+      );
+
+      // Open share modal with pre-generated image
+      setShowShareModal(true);
+
+      // Or directly share on Twitter
+      const message = `Check out ${creator.name}'s profile on @TipzStacks! Rank #${creator.rank} 🎨`;
+      const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(window.location.href)}`;
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Failed to share profile:', error);
+    }
+  };
+
+  return (
+    <div>
+      {/* Main Profile Content */}
+      <div className="profile-content">
+        <h1>{creator?.name}</h1>
+        <button onClick={handleShareProfile}>Share Profile</button>
+      </div>
+
+      {/* Hidden Profile Card for Image Generation */}
+      <div style={{ position: 'absolute', left: '-9999px' }}>
+        <div ref={profileCardRef}>
+          <ProfileCard
+            type="creator"
+            name={creator?.name || ''}
+            address={creator?.address || ''}
+            profileImage={creator?.metadata?.profileImage}
+            rank={creator?.rank || 999}
+            stats={createCreatorStats(
+              creator?.stats?.totalStxReceived || 0,
+              creator?.stats?.totalCheerReceived || 0,
+              creator?.stats?.supportersCount || 0,
+              creator?.rank || 999
+            )}
+            bio={creator?.metadata?.bio}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Example 2: Achievement Unlock with Auto-Share
+ */
+export function AchievementUnlockExample() {
+  const [achievement, setAchievement] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
+  const [showModal, setShowModal] = useState(false);
+  const achievementCardRef = useRef<HTMLDivElement>(null);
+
+  const handleAchievementUnlock = async (newAchievement: any) => {
+    setAchievement(newAchievement);
+    setShowModal(true);
+
+    // Auto-generate shareable image
+    if (achievementCardRef.current) {
+      try {
+        const dataUrl = await generateAndCacheImage(
+          achievementCardRef.current,
+          `achievement_${newAchievement.id}_${user.address}`
+        );
+
+        // Store for later sharing
+        localStorage.setItem('lastAchievementImage', dataUrl);
+      } catch (error) {
+        console.error('Failed to generate achievement image:', error);
+      }
+    }
+  };
+
+  const handleShareAchievement = () => {
+    const imageUrl = localStorage.getItem('lastAchievementImage');
+    if (!imageUrl || !achievement) return;
+
+    // Share on social media
+    const message = `🎉 Just unlocked "${achievement.name}" on @TipzStacks!`;
+    const shareUrl = `${window.location.origin}/achievement/${user.address}/${achievement.id}`;
+    
+    // Twitter
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(shareUrl)}`,
+      '_blank'
+    );
+  };
+
+  if (!showModal || !achievement) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        {/* Achievement Display */}
+        <div ref={achievementCardRef}>
+          <AchievementCard
+            achievementName={achievement.name}
+            achievementDescription={achievement.description}
+            achievementIcon={achievement.icon}
+            userName={user?.name || 'Anonymous'}
+            userAddress={user?.address || ''}
+            unlockedByPercent={achievement.unlockedByPercent}
+            category={achievement.category}
+          />
+        </div>
+
+        {/* Share Actions */}
+        <div className="modal-actions">
+          <button onClick={handleShareAchievement}>Share on Twitter</button>
+          <button onClick={() => setShowModal(false)}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Example 3: Tip Success with Shareable Card
+ */
+export function TipSuccessExample() {
+  const [tipData, setTipData] = useState<any>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const transactionCardRef = useRef<HTMLDivElement>(null);
+  const { openShareModal } = useSocialShare();
+
+  const handleTipSuccess = async (transaction: any) => {
+    setTipData(transaction);
+    setShowSuccess(true);
+
+    // Generate shareable card
+    if (transactionCardRef.current) {
+      try {
+        const dataUrl = await generateAndCacheImage(
+          transactionCardRef.current,
+          `tip_${transaction.id}`
+        );
+
+        // Open share modal with pre-generated image
+        openShareModal({
+          type: 'tip',
+          creatorName: transaction.creatorName,
+          amount: transaction.amount,
+          tokenType: 'STX',
+          shareUrl: window.location.href,
+          imageUrl: dataUrl,
+        });
+      } catch (error) {
+        console.error('Failed to generate tip card:', error);
+      }
+    }
+  };
+
+  if (!showSuccess || !tipData) return null;
+
+  return (
+    <div className="success-modal">
+      {/* Success Message */}
+      <h2>Tip Sent Successfully! 🎉</h2>
+      
+      {/* Hidden Transaction Card for Image Generation */}
+      <div style={{ position: 'absolute', left: '-9999px' }}>
+        <div ref={transactionCardRef}>
+          <TransactionCard
+            type="tip"
+            creatorName={tipData.creatorName}
+            creatorAddress={tipData.creatorAddress}
+            creatorImage={tipData.creatorImage}
+            amount={tipData.amount}
+            tipperName={tipData.tipperName}
+            timestamp={new Date(tipData.timestamp)}
+            message={tipData.message}
+          />
+        </div>
+      </div>
+
+      {/* Share Prompt */}
+      <p>Share your support to inspire others!</p>
+      <button onClick={() => openShareModal({ type: 'tip', ...tipData })}>
+        Share on Social Media
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Example 4: Custom Meta Tags for Special Pages
+ */
+export function SpecialEventPage() {
+  const { setMetaTags } = useMetaTags({ autoUpdate: false });
+
+  useEffect(() => {
+    // Set custom meta tags for this event
+    setMetaTags('custom', {
+      title: 'Special Creator Event - Tipz Stacks',
+      description: 'Join us for a special creator appreciation event! Support your favorite creators with bonus CHEER tokens.',
+      image: 'https://tipz-stacks.com/images/event-banner.png',
+      url: window.location.href,
+      type: 'article',
+    });
+
+    return () => {
+      resetMetaTags();
+    };
+  }, []);
+
+  return (
+    <div className="event-page">
+      <h1>Special Creator Event</h1>
+      {/* Event content */}
+    </div>
+  );
+}
+
+/**
+ * Example 5: Batch Image Generation for Multiple Creators
+ */
+export function CreatorGalleryExample() {
+  const [creators, setCreators] = useState<any[]>([]);
+  const [generatingImages, setGeneratingImages] = useState(false);
+
+  const handleGenerateAllImages = async () => {
+    setGeneratingImages(true);
+
+    try {
+      for (const creator of creators) {
+        // Create temporary element for each creator
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        // Render ProfileCard into temp element
+        const root = ReactDOM.createRoot(tempDiv);
+        root.render(
+          <ProfileCard
+            type="creator"
+            name={creator.name}
+            address={creator.address}
+            profileImage={creator.profileImage}
+            rank={creator.rank}
+            stats={createCreatorStats(
+              creator.tipsReceived,
+              creator.cheersReceived,
+              creator.supporters,
+              creator.rank
+            )}
+          />
+        );
+
+        // Wait for render
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Generate and cache image
+        await generateAndCacheImage(
+          tempDiv.firstElementChild as HTMLElement,
+          `creator_gallery_${creator.address}`
+        );
+
+        // Cleanup
+        root.unmount();
+        document.body.removeChild(tempDiv);
+      }
+
+      alert('All images generated and cached!');
+    } catch (error) {
+      console.error('Failed to generate images:', error);
+      alert('Some images failed to generate');
+    } finally {
+      setGeneratingImages(false);
+    }
+  };
+
+  return (
+    <div className="creator-gallery">
+      <button 
+        onClick={handleGenerateAllImages}
+        disabled={generatingImages}
+      >
+        {generatingImages ? 'Generating...' : 'Pre-generate All Images'}
+      </button>
+      
+      {/* Gallery content */}
+    </div>
+  );
+}
+
+/**
+ * Example 6: Image Download Feature
+ */
+export function DownloadableAchievementsExample() {
+  const achievements = useAchievements();
+
+  const handleDownloadAchievement = async (achievement: any) => {
+    // Create temporary card
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    document.body.appendChild(tempDiv);
+
+    const root = ReactDOM.createRoot(tempDiv);
+    root.render(
+      <AchievementCard
+        achievementName={achievement.name}
+        achievementDescription={achievement.description}
+        achievementIcon={achievement.icon}
+        userName="You"
+        userAddress={achievement.userAddress}
+        unlockedByPercent={achievement.unlockedByPercent}
+      />
+    );
+
+    // Wait for render
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Generate and download
+    try {
+      const dataUrl = await generateImageFromElement(
+        tempDiv.firstElementChild as HTMLElement
+      );
+      downloadImage(dataUrl, `${achievement.name.toLowerCase()}-achievement.png`);
+    } catch (error) {
+      console.error('Failed to download achievement:', error);
+      alert('Failed to download image');
+    } finally {
+      root.unmount();
+      document.body.removeChild(tempDiv);
+    }
+  };
+
+  return (
+    <div className="achievements-list">
+      {achievements.map(achievement => (
+        <div key={achievement.id} className="achievement-item">
+          <h3>{achievement.name}</h3>
+          <button onClick={() => handleDownloadAchievement(achievement)}>
+            Download Image
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Example 7: Real-time Meta Tag Updates
+ */
+export function DynamicContentPage() {
+  const [content, setContent] = useState<any>(null);
+  const { setMetaTags } = useMetaTags({ autoUpdate: false });
+
+  useEffect(() => {
+    if (content) {
+      // Update meta tags whenever content changes
+      setMetaTags('custom', {
+        title: content.title,
+        description: content.description,
+        image: content.imageUrl,
+        url: window.location.href,
+      });
+    }
+  }, [content, setMetaTags]);
+
+  return (
+    <div className="dynamic-page">
+      {/* Dynamic content */}
+    </div>
+  );
+}
+
+// Export all examples
+export default {
+  CreatorProfileExample,
+  AchievementUnlockExample,
+  TipSuccessExample,
+  SpecialEventPage,
+  CreatorGalleryExample,
+  DownloadableAchievementsExample,
+  DynamicContentPage,
+};

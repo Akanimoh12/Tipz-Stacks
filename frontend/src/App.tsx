@@ -1,29 +1,36 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { SidebarProvider } from './contexts/SidebarContext'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import DashboardLayout from './components/dashboard/DashboardLayout'
 import { ReferralBanner } from './components/social'
-import Landing from './pages/Landing'
-import Dashboard from './pages/Dashboard'
-import Discover from './pages/Discover'
-import Leaderboards from './pages/Leaderboards'
-import MyProfile from './pages/MyProfile'
-import Claim from './pages/Claim'
-import RegisterCreator from './pages/RegisterCreator'
-import CreatorProfile from './pages/CreatorProfile'
-import TransactionHistory from './pages/TransactionHistory'
-import TipperProfile from './pages/TipperProfile'
-import { Achievements } from './pages/Achievements'
-import NotFound from './pages/NotFound'
+import ErrorBoundary from './components/common/ErrorBoundary'
+import { LoadingFallback } from './components/common/LoadingFallback'
+
+// Lazy load all page components for code splitting
+const Landing = lazy(() => import('./pages/Landing'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Discover = lazy(() => import('./pages/Discover'))
+const Leaderboards = lazy(() => import('./pages/Leaderboards'))
+const MyProfile = lazy(() => import('./pages/MyProfile'))
+const Claim = lazy(() => import('./pages/Claim'))
+const RegisterCreator = lazy(() => import('./pages/RegisterCreator'))
+const CreatorProfile = lazy(() => import('./pages/CreatorProfile'))
+const TransactionHistory = lazy(() => import('./pages/TransactionHistory'))
+const TipperProfile = lazy(() => import('./pages/TipperProfile'))
+const Achievements = lazy(() => import('./pages/Achievements').then(module => ({ default: module.Achievements })))
+const NotFound = lazy(() => import('./pages/NotFound'))
 
 function App() {
   return (
-    <Router>
-      <SidebarProvider>
-        <ReferralBanner />
-        <Routes>
-          {/* Public Route */}
-          <Route path="/" element={<Landing />} />
+    <ErrorBoundary>
+      <Router>
+        <SidebarProvider>
+          <ReferralBanner />
+          <Suspense fallback={<LoadingFallback fullScreen message="Loading Tipz..." />}>
+            <Routes>
+              {/* Public Route */}
+              <Route path="/" element={<Landing />} />
 
           {/* Protected Dashboard Routes */}
           <Route
@@ -127,11 +134,13 @@ function App() {
             }
           />
 
-          {/* 404 Not Found */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </SidebarProvider>
-    </Router>
+              {/* 404 Not Found */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </SidebarProvider>
+      </Router>
+    </ErrorBoundary>
   )
 }
 

@@ -107,70 +107,83 @@ export const useLeaderboard = (userAddress?: string) => {
     }
 
     try {
-      // Get all creators from contract
-      const creatorsResult = await fetchCallReadOnlyFunction({
-        network: getNetwork(),
-        contractAddress: TIPZ_CORE_CONTRACT.address,
-        contractName: TIPZ_CORE_CONTRACT.name,
-        functionName: 'get-all-creators',
-        functionArgs: [],
-        senderAddress: TIPZ_CORE_CONTRACT.address,
-      });
+      console.log('Fetching creator leaderboard...');
+      
+      // Get all registered creators using the improved getAllCreators function
+      const { getAllCreators, getCreatorInfo } = await import('../services/contractService');
+      const creatorAddresses = await getAllCreators();
+      
+      if (creatorAddresses.length === 0) {
+        console.log('No creators found for leaderboard');
+        return [];
+      }
 
-      const creatorsJson = cvToJSON(creatorsResult);
-      const creatorsList = creatorsJson.value || [];
+      console.log(`Calculating scores for ${creatorAddresses.length} creators...`);
 
-      // Fetch scores and details for each creator
-      const creatorsWithScores = await Promise.all(
-        creatorsList.map(async (creator: any) => {
-          const address = creator.value.address?.value || creator.value;
-          const score = await calculateCreatorScore(address);
+      // Fetch data for each creator in parallel
+      const creatorsData = await Promise.all(
+        creatorAddresses.map(async (address) => {
+          try {
+            // Get creator info from contract
+            const info = await getCreatorInfo(address);
+            if (!info) return null;
 
-          // Get creator info
-          const infoResult = await fetchCallReadOnlyFunction({
-            network: getNetwork(),
-            contractAddress: TIPZ_CORE_CONTRACT.address,
-            contractName: TIPZ_CORE_CONTRACT.name,
-            functionName: 'get-creator-info',
-            functionArgs: [standardPrincipalCV(address)],
-            senderAddress: address,
-          });
+            // Calculate score from contract
+            const score = await calculateCreatorScore(address);
 
-          const info = cvToJSON(infoResult);
-          const creatorData = info.value?.value || {};
+            // Fetch metadata for profile image
+            let profileImage = '';
+            let metadata: any = {};
+            if (info.metadataUri) {
+              try {
+                const { fetchCreatorMetadata } = await import('../services/pinataService');
+                metadata = await fetchCreatorMetadata(info.metadataUri);
+                profileImage = metadata.profileImage || '';
+              } catch (err) {
+                console.warn(`Failed to fetch metadata for ${address}`);
+              }
+            }
 
-          return {
-            address,
-            name: creatorData.name?.value || 'Anonymous Creator',
-            profileImage: creatorData['metadata-uri']?.value || '',
-            stxReceived: Number(creatorData['total-stx-received']?.value || 0) / 1000000,
-            cheerReceived: Number(creatorData['total-cheer-received']?.value || 0),
-            score,
-            rank: 0, // Will be assigned after sorting
-            supportersCount: Number(creatorData['supporters-count']?.value || 0),
-          };
+            return {
+              address,
+              name: info.name,
+              profileImage,
+              stxReceived: info.totalStxReceived / 1_000_000, // Convert to STX
+              cheerReceived: info.totalCheerReceived,
+              score,
+              rank: 0, // Will be assigned after sorting
+              supportersCount: info.supportersCount,
+              metadata: {
+                tags: metadata.tags || [],
+                bio: metadata.bio || '',
+              },
+            };
+          } catch (error) {
+            console.error(`Error fetching creator ${address}:`, error);
+            return null;
+          }
         })
       );
 
-      // Sort by score (descending) and assign ranks
-      const sorted = creatorsWithScores.sort((a, b) => b.score - a.score);
-      
-      let currentRank = 1;
-      const ranked = sorted.map((creator, index) => {
-        // Handle ties - same score gets same rank
-        if (index > 0 && creator.score < sorted[index - 1].score) {
-          currentRank = index + 1;
-        }
-        return { ...creator, rank: currentRank };
+      // Filter out nulls and sort by score
+      const validCreators = creatorsData
+        .filter((c): c is NonNullable<typeof c> => c !== null)
+        .sort((a, b) => b.score - a.score);
+
+      // Assign ranks
+      validCreators.forEach((creator, index) => {
+        creator.rank = index + 1;
       });
+
+      console.log(`Leaderboard ready with ${validCreators.length} creators`);
 
       // Update cache
       setCache(prev => ({
         ...prev,
-        creators: { data: ranked, timestamp: Date.now() },
+        creators: { data: validCreators, timestamp: Date.now() },
       }));
 
-      return ranked;
+      return validCreators;
     } catch (error) {
       console.error('Error fetching creator leaderboard:', error);
       throw error;
@@ -185,83 +198,92 @@ export const useLeaderboard = (userAddress?: string) => {
     }
 
     try {
-      // Get all tippers from contract
-      const tippersResult = await fetchCallReadOnlyFunction({
-        network: getNetwork(),
-        contractAddress: TIPZ_CORE_CONTRACT.address,
-        contractName: TIPZ_CORE_CONTRACT.name,
-        functionName: 'get-all-tippers',
-        functionArgs: [],
-        senderAddress: TIPZ_CORE_CONTRACT.address,
+      console.log('Fetching tipper leaderboard...');
+      
+      // Query transaction events to find all tippers
+      const apiUrl = import.meta.env.VITE_STACKS_API || 'https://api.testnet.hiro.so';
+      const { address, name } = TIPZ_CORE_CONTRACT;
+      const contractId = `${address}.${name}`;
+
+      // Fetch all tip events
+      const response = await fetch(
+        `${apiUrl}/extended/v1/contract/${contractId}/events?limit=200&offset=0`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch tipper data');
+      }
+
+      const data = await response.json();
+      
+      // Extract unique tipper addresses from events
+      const tipperAddresses = new Set<string>();
+      
+      data.results.forEach((event: any) => {
+        if (event.event_type === 'print_event') {
+          const logValue = event.contract_log?.value?.repr;
+          // Extract tipper address from event
+          const tipperMatch = logValue?.match(/tipper:\s*([A-Z0-9]+)/);
+          if (tipperMatch) {
+            tipperAddresses.add(tipperMatch[1]);
+          }
+        }
       });
 
-      const tippersJson = cvToJSON(tippersResult);
-      const tippersList = tippersJson.value || [];
+      console.log(`Found ${tipperAddresses.size} unique tippers`);
 
-      // Fetch scores and details for each tipper
-      const tippersWithScores = await Promise.all(
-        tippersList.map(async (tipper: any) => {
-          const address = tipper.value?.address?.value || tipper.value;
-          const score = await calculateTipperScore(address);
+      if (tipperAddresses.size === 0) {
+        console.log('No tippers found for leaderboard');
+        return [];
+      }
 
-          // Get tipper info
-          const infoResult = await fetchCallReadOnlyFunction({
-            network: getNetwork(),
-            contractAddress: TIPZ_CORE_CONTRACT.address,
-            contractName: TIPZ_CORE_CONTRACT.name,
-            functionName: 'get-tipper-info',
-            functionArgs: [standardPrincipalCV(address)],
-            senderAddress: address,
-          });
+      // Fetch data for each tipper
+      const { getTipperStats } = await import('../services/contractService');
+      const tippersData = await Promise.all(
+        Array.from(tipperAddresses).map(async (address) => {
+          try {
+            // Calculate tipper score from contract
+            const score = await calculateTipperScore(address);
 
-          const info = cvToJSON(infoResult);
-          const tipperData = info.value?.value || {};
+            // Get tipper stats
+            const stats = await getTipperStats(address);
 
-          const stxGiven = Number(tipperData['total-stx-given']?.value || 0) / 1000000;
-          const cheerGiven = Number(tipperData['total-cheer-given']?.value || 0);
-          const creatorsSupported = Number(tipperData['creators-supported']?.value || 0);
-
-          // Calculate achievement badges
-          const badges: string[] = [];
-          const totalTips = Number(tipperData['total-tips']?.value || 0);
-          
-          if (totalTips >= 100) badges.push('generous');
-          if (creatorsSupported >= 10) badges.push('superfan');
-          if (stxGiven >= 1000) badges.push('whale');
-          if (cheerGiven >= 10000) badges.push('cheer-champion');
-
-          return {
-            address,
-            displayName: tipperData.name?.value || `${address.slice(0, 6)}...${address.slice(-4)}`,
-            stxGiven,
-            cheerGiven,
-            score,
-            rank: 0, // Will be assigned after sorting
-            creatorsSupported,
-            badges,
-          };
+            return {
+              address,
+              displayName: address.slice(0, 6) + '...' + address.slice(-4),
+              stxGiven: stats.totalStxGiven / 1_000_000,
+              cheerGiven: stats.totalCheerGiven,
+              score,
+              rank: 0,
+              creatorsSupported: stats.creatorsSupported,
+              badges: [], // Calculate based on achievements
+            };
+          } catch (error) {
+            console.error(`Error fetching tipper ${address}:`, error);
+            return null;
+          }
         })
       );
 
-      // Sort by score (descending) and assign ranks
-      const sorted = tippersWithScores.sort((a, b) => b.score - a.score);
-      
-      let currentRank = 1;
-      const ranked = sorted.map((tipper, index) => {
-        // Handle ties - same score gets same rank
-        if (index > 0 && tipper.score < sorted[index - 1].score) {
-          currentRank = index + 1;
-        }
-        return { ...tipper, rank: currentRank };
+      // Filter and sort
+      const validTippers = tippersData
+        .filter((t): t is NonNullable<typeof t> => t !== null)
+        .sort((a, b) => b.score - a.score);
+
+      // Assign ranks
+      validTippers.forEach((tipper, index) => {
+        tipper.rank = index + 1;
       });
+
+      console.log(`Tipper leaderboard ready with ${validTippers.length} tippers`);
 
       // Update cache
       setCache(prev => ({
         ...prev,
-        tippers: { data: ranked, timestamp: Date.now() },
+        tippers: { data: validTippers, timestamp: Date.now() },
       }));
 
-      return ranked;
+      return validTippers;
     } catch (error) {
       console.error('Error fetching tipper leaderboard:', error);
       throw error;
@@ -318,6 +340,7 @@ export const useLeaderboard = (userAddress?: string) => {
   // Auto-refresh every 60 seconds
   useEffect(() => {
     const interval = setInterval(() => {
+      console.log('Auto-refreshing leaderboard...');
       refreshLeaderboards();
     }, AUTO_REFRESH_INTERVAL);
 

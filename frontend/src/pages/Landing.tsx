@@ -4,9 +4,13 @@ import { Hero, Features, Stats, HowItWorks, CTA } from '../components/landing';
 import { Footer, ConnectWallet, BalanceDisplay } from '../components/common';
 import { Heading } from '../components/common/Typography';
 import { useWallet } from '../hooks/useWallet';
+import { useMetaTags } from '../hooks/useMetaTags';
 
 const Landing: React.FC = () => {
   const { isConnected } = useWallet();
+  
+  // Set landing page meta tags
+  useMetaTags({ type: 'landing', autoUpdate: true });
 
   return (
     <div className="min-h-screen bg-white">

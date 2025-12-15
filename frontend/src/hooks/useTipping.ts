@@ -37,6 +37,9 @@ export const useTipping = () => {
     showSuccess: false,
   });
 
+  // Optimistic updates for instant feedback
+  const [optimisticTips, setOptimisticTips] = useState<Map<string, { stx: number; cheer: number }>>(new Map());
+
   const openTipModal = useCallback((creator: Creator) => {
     setState({
       modalType: 'tip',
@@ -142,12 +145,23 @@ export const useTipping = () => {
 
     setState(prev => ({ ...prev, isProcessing: true, error: null }));
 
+    const tipAmount = parseFloat(state.amount);
+    const creatorAddress = state.selectedCreator.address;
+
+    // Add optimistic update
+    setOptimisticTips(prev => {
+      const newMap = new Map(prev);
+      const current = newMap.get(creatorAddress) || { stx: 0, cheer: 0 };
+      newMap.set(creatorAddress, { ...current, stx: current.stx + tipAmount });
+      return newMap;
+    });
+
     try {
       // Convert STX to micro-STX (1 STX = 1,000,000 micro-STX)
-      const microStx = Math.floor(parseFloat(state.amount) * 1_000_000);
+      const microStx = Math.floor(tipAmount * 1_000_000);
       
       const txId = await sendTipWithStx(
-        state.selectedCreator.address,
+        creatorAddress,
         microStx,
         walletAddress
       );
@@ -161,6 +175,15 @@ export const useTipping = () => {
       }));
     } catch (error: any) {
       console.error('Tip transaction failed:', error);
+      
+      // Revert optimistic update on error
+      setOptimisticTips(prev => {
+        const newMap = new Map(prev);
+        const current = newMap.get(creatorAddress) || { stx: tipAmount, cheer: 0 };
+        newMap.set(creatorAddress, { ...current, stx: Math.max(0, current.stx - tipAmount) });
+        return newMap;
+      });
+
       setState(prev => ({
         ...prev,
         isProcessing: false,
@@ -183,11 +206,20 @@ export const useTipping = () => {
 
     setState(prev => ({ ...prev, isProcessing: true, error: null }));
 
+    const cheerAmount = Math.floor(parseFloat(state.amount));
+    const creatorAddress = state.selectedCreator.address;
+
+    // Add optimistic update
+    setOptimisticTips(prev => {
+      const newMap = new Map(prev);
+      const current = newMap.get(creatorAddress) || { stx: 0, cheer: 0 };
+      newMap.set(creatorAddress, { ...current, cheer: current.cheer + cheerAmount });
+      return newMap;
+    });
+
     try {
-      const cheerAmount = Math.floor(parseFloat(state.amount));
-      
       const txId = await sendCheerWithToken(
-        state.selectedCreator.address,
+        creatorAddress,
         cheerAmount,
         walletAddress
       );
@@ -201,6 +233,15 @@ export const useTipping = () => {
       }));
     } catch (error: any) {
       console.error('Cheer transaction failed:', error);
+
+      // Revert optimistic update on error
+      setOptimisticTips(prev => {
+        const newMap = new Map(prev);
+        const current = newMap.get(creatorAddress) || { stx: 0, cheer: cheerAmount };
+        newMap.set(creatorAddress, { ...current, cheer: Math.max(0, current.cheer - cheerAmount) });
+        return newMap;
+      });
+
       setState(prev => ({
         ...prev,
         isProcessing: false,
@@ -208,6 +249,18 @@ export const useTipping = () => {
       }));
     }
   }, [walletAddress, state.selectedCreator, state.amount, validateAmount]);
+
+  // Helper to get creator with optimistic updates applied
+  const getCreatorWithOptimistic = useCallback((creator: Creator): Creator => {
+    const optimistic = optimisticTips.get(creator.address);
+    if (!optimistic) return creator;
+
+    return {
+      ...creator,
+      totalStxReceived: (creator.totalStxReceived || 0) + optimistic.stx,
+      totalCheerReceived: (creator.totalCheerReceived || 0) + optimistic.cheer,
+    };
+  }, [optimisticTips]);
 
   return {
     ...state,
@@ -219,6 +272,8 @@ export const useTipping = () => {
     validateAmount,
     executeTip,
     executeCheer,
+    getCreatorWithOptimistic,
+    optimisticTips,
     stxBalance,
     cheerBalance,
   };

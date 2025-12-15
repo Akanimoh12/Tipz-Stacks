@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import RankBadge from './RankBadge';
 import ProfileCell from './ProfileCell';
 import { Button } from '../common/Button';
@@ -21,7 +21,7 @@ interface CreatorLeaderboardProps {
   onTipClick: (creator: CreatorLeaderboardEntry) => void;
 }
 
-export default function CreatorLeaderboard({
+function CreatorLeaderboard({
   creators,
   currentUserAddress,
   onTipClick,
@@ -253,3 +253,17 @@ export default function CreatorLeaderboard({
     </div>
   );
 }
+
+export default memo(CreatorLeaderboard, (prevProps, nextProps) => {
+  // Only re-render if creators array actually changed or user address changed
+  return (
+    prevProps.creators.length === nextProps.creators.length &&
+    prevProps.currentUserAddress === nextProps.currentUserAddress &&
+    prevProps.creators.every((creator, idx) => 
+      creator.address === nextProps.creators[idx]?.address &&
+      creator.score === nextProps.creators[idx]?.score &&
+      creator.stxReceived === nextProps.creators[idx]?.stxReceived &&
+      creator.cheerReceived === nextProps.creators[idx]?.cheerReceived
+    )
+  );
+});

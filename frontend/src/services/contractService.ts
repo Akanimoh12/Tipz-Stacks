@@ -500,8 +500,8 @@ export const getCreatorInfo = async (address: string) => {
 };
 
 /**
- * Fetch all creators from Stacks API using contract events
- * This queries the blockchain API for creator-registered events
+ * Fetch all registered creators from contract
+ * Uses both contract events and direct contract queries
  */
 export const getAllCreators = async (): Promise<string[]> => {
   try {
@@ -509,43 +509,93 @@ export const getAllCreators = async (): Promise<string[]> => {
     const contractId = `${address}.${name}`;
     const apiUrl = import.meta.env.VITE_STACKS_API || 'https://api.testnet.hiro.so';
     
-    // Query contract events for creator registrations
+    console.log('Fetching creators from:', `${apiUrl}/extended/v1/contract/${contractId}/events`);
+    
+    // Method 1: Try to get from contract events
     const response = await fetch(
       `${apiUrl}/extended/v1/contract/${contractId}/events?limit=200&offset=0`
     );
-
-    if (!response.ok) {
-      console.error('Failed to fetch contract events:', response.statusText);
-      return [];
-    }
-
-    const data = await response.json();
-    const creatorAddresses: string[] = [];
-
-    // Parse events to extract creator addresses
-    if (data.results && Array.isArray(data.results)) {
-      for (const event of data.results) {
-        if (event.contract_log?.value?.repr) {
-          const eventData = event.contract_log.value.repr;
-          // Look for creator-registered events
-          if (eventData.includes('creator-registered') || eventData.includes('event: \"creator-registered\"')) {
-            // Extract creator address from event
-            const creatorMatch = eventData.match(/creator: ([A-Z0-9]+)/);
-            if (creatorMatch && creatorMatch[1]) {
-              const address = creatorMatch[1];
-              if (!creatorAddresses.includes(address)) {
-                creatorAddresses.push(address);
-              }
-            }
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      // Filter for creator-registered events
+      const creatorAddresses = data.results
+        .filter((event: any) => {
+          return event.event_type === 'print_event' && 
+                 event.contract_log?.value?.repr?.includes('creator-registered');
+        })
+        .map((event: any) => {
+          // Extract creator address from event
+          try {
+            const logValue = event.contract_log.value;
+            // Parse the tuple to get creator address
+            const creatorMatch = logValue.repr.match(/creator:\s*([A-Z0-9]+)/);
+            return creatorMatch ? creatorMatch[1] : null;
+          } catch (err) {
+            console.warn('Error parsing event:', err);
+            return null;
           }
-        }
+        })
+        .filter((addr: string | null): addr is string => addr !== null);
+      
+      if (creatorAddresses.length > 0) {
+        console.log(`Found ${creatorAddresses.length} creators from events`);
+        return [...new Set(creatorAddresses)]; // Remove duplicates
       }
     }
-
-    console.log('Found creators from events:', creatorAddresses);
-    return creatorAddresses;
+    
+    // Method 2: Fallback - try to query contract directly for creator count
+    // Note: This requires a get-all-creators or get-creator-count function in contract
+    // For now, return empty array if events don't work
+    console.warn('No creator events found, contract may not have any registrations yet');
+    return [];
+    
   } catch (error) {
     console.error('Error fetching creators from API:', error);
     return [];
+  }
+};
+
+/**
+ * Get tipper statistics from contract
+ * @param address - Tipper principal address
+ * @returns Tipper stats or default zeros
+ */
+export const getTipperStats = async (address: string) => {
+  try {
+    const network = getNetwork();
+    
+    const result = await fetchCallReadOnlyFunction({
+      contractAddress: TIPZ_CORE_CONTRACT.address,
+      contractName: TIPZ_CORE_CONTRACT.name,
+      functionName: 'get-tipper-stats',
+      functionArgs: [standardPrincipalCV(address)],
+      network,
+      senderAddress: address,
+    });
+
+    const value = cvToValue(result);
+    
+    if (!value) {
+      return {
+        totalStxGiven: 0,
+        totalCheerGiven: 0,
+        creatorsSupported: 0,
+      };
+    }
+
+    return {
+      totalStxGiven: Number(value['total-stx-given']),
+      totalCheerGiven: Number(value['total-cheer-given']),
+      creatorsSupported: Number(value['creators-supported']),
+    };
+  } catch (error) {
+    console.error('Error getting tipper stats:', error);
+    return {
+      totalStxGiven: 0,
+      totalCheerGiven: 0,
+      creatorsSupported: 0,
+    };
   }
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import RankBadge from './RankBadge';
 import ProfileCell from './ProfileCell';
 import { Button } from '../common/Button';
@@ -20,7 +20,7 @@ interface TipperLeaderboardProps {
   currentUserAddress?: string;
 }
 
-export default function TipperLeaderboard({
+function TipperLeaderboard({
   tippers,
   currentUserAddress,
 }: TipperLeaderboardProps) {
@@ -341,3 +341,17 @@ export default function TipperLeaderboard({
     </div>
   );
 }
+
+export default memo(TipperLeaderboard, (prevProps, nextProps) => {
+  // Only re-render if tippers array actually changed or user address changed
+  return (
+    prevProps.tippers.length === nextProps.tippers.length &&
+    prevProps.currentUserAddress === nextProps.currentUserAddress &&
+    prevProps.tippers.every((tipper, idx) => 
+      tipper.address === nextProps.tippers[idx]?.address &&
+      tipper.score === nextProps.tippers[idx]?.score &&
+      tipper.stxGiven === nextProps.tippers[idx]?.stxGiven &&
+      tipper.cheerGiven === nextProps.tippers[idx]?.cheerGiven
+    )
+  );
+});

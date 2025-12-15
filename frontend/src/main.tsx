@@ -13,6 +13,29 @@ import './index.css'
 import App from './App.tsx'
 import { Connect } from '@stacks/connect-react'
 import { WalletProvider } from './contexts/WalletContext'
+import performanceMonitor from './utils/performanceMonitor'
+import { registerSW } from 'virtual:pwa-register'
+
+// Initialize performance monitoring
+performanceMonitor.init()
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  registerSW({
+    onNeedRefresh() {
+      console.log('New content available, please refresh.')
+    },
+    onOfflineReady() {
+      console.log('App ready to work offline.')
+    },
+    onRegistered(registration) {
+      console.log('Service Worker registered:', registration)
+    },
+    onRegisterError(error) {
+      console.error('Service Worker registration error:', error)
+    },
+  })
+}
 
 const appDetails = {
   name: 'Tipz Stacks',

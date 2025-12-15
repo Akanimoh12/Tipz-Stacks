@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
 import { uploadProfileImage, uploadMetadata } from '../services/pinataService';
-import { registerCreatorOnChain } from '../services/contractService';
+import { registerCreatorOnChain, getAllCreators, getCreatorInfo, isCreatorRegistered } from '../services/contractService';
 import { useWallet } from './useWallet';
+import { debounce } from '../utils/helpers';
 
 export interface PortfolioLink {
   title: string;
@@ -63,6 +64,67 @@ export const useRegistration = () => {
     transactionId: null,
     isSuccess: false,
   });
+
+  // Real-time validation state
+  const [isCheckingName, setIsCheckingName] = useState(false);
+  const [isCheckingAddress, setIsCheckingAddress] = useState(false);
+  const [nameAvailable, setNameAvailable] = useState<boolean | null>(null);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
+
+  // Check if creator name is already taken
+  const checkNameAvailability = useCallback(async (name: string): Promise<boolean> => {
+    if (!name || name.length < 3) {
+      setNameAvailable(null);
+      return false;
+    }
+    
+    setIsCheckingName(true);
+    try {
+      // Fetch all creators and check if name exists
+      const creators = await getAllCreators();
+      const creatorInfos = await Promise.all(
+        creators.map(addr => getCreatorInfo(addr))
+      );
+      
+      const nameExists = creatorInfos.some(
+        info => info && info.name.toLowerCase() === name.toLowerCase()
+      );
+      
+      setNameAvailable(!nameExists);
+      setIsCheckingName(false);
+      return !nameExists;
+    } catch (error) {
+      console.error('Error checking name availability:', error);
+      setIsCheckingName(false);
+      setNameAvailable(null);
+      return false;
+    }
+  }, []);
+
+  // Check if address is already registered
+  const checkAddressRegistration = useCallback(async (address: string): Promise<boolean> => {
+    if (!address) return false;
+    
+    setIsCheckingAddress(true);
+    try {
+      const isRegistered = await isCreatorRegistered(address);
+      setAlreadyRegistered(isRegistered);
+      setIsCheckingAddress(false);
+      return isRegistered;
+    } catch (error) {
+      console.error('Error checking address registration:', error);
+      setIsCheckingAddress(false);
+      return false;
+    }
+  }, []);
+
+  // Debounced name check (500ms delay)
+  const debouncedNameCheck = useCallback(
+    debounce((name: string) => {
+      checkNameAvailability(name);
+    }, 500),
+    [checkNameAvailability]
+  );
 
   const updateFormField = useCallback((field: keyof RegistrationFormData, value: any) => {
     setState(prev => ({
@@ -364,5 +426,13 @@ export const useRegistration = () => {
     prevStep,
     submitRegistration,
     reset,
+    // Real-time validation
+    isCheckingName,
+    isCheckingAddress,
+    nameAvailable,
+    alreadyRegistered,
+    checkNameAvailability,
+    checkAddressRegistration,
+    debouncedNameCheck,
   };
 };

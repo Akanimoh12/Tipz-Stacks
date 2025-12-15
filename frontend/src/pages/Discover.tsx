@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { FiSearch, FiFilter } from 'react-icons/fi';
+import React, { useEffect, useState, useCallback } from 'react';
+import { FiSearch, FiFilter, FiRefreshCw, FiUsers } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useCreators } from '../hooks/useCreators';
 import { useTipping } from '../hooks/useTipping';
@@ -42,6 +42,7 @@ const Discover: React.FC = () => {
     searchCreators,
     sortCreators,
     filterByCategory,
+    fetchCreators,
   } = useCreators();
 
   const {
@@ -78,43 +79,54 @@ const Discover: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localSearchQuery]); // Only depend on localSearchQuery
 
-  const handleCategoryChange = (category: string) => {
+  // Memoize event handlers to prevent unnecessary re-renders
+  const handleCategoryChange = useCallback((category: string) => {
     filterByCategory(category === 'All' ? undefined : category);
-  };
+  }, [filterByCategory]);
 
-  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleSortChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     sortCreators(e.target.value as any);
-  };
+  }, [sortCreators]);
 
-  const handleTip = (creator: any) => {
+  const handleTip = useCallback((creator: any) => {
     openTipModal({
       address: creator.address,
       name: creator.name,
       profileImage: creator.metadata?.profileImage,
       totalStxReceived: creator.stats.totalStxReceived,
     });
-  };
+  }, [openTipModal]);
 
-  const handleCheer = (creator: any) => {
+  const handleCheer = useCallback((creator: any) => {
     openCheerModal({
       address: creator.address,
       name: creator.name,
       profileImage: creator.metadata?.profileImage,
       totalCheerReceived: creator.stats.totalCheerReceived,
     });
-  };
+  }, [openCheerModal]);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-orange-50 via-white to-orange-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold bg-linear-to-r from-[#FF6B35] to-[#FF8C42] bg-clip-text text-transparent mb-2">
-            Discover Creators
-          </h1>
-          <p className="text-gray-600">
-            Find amazing creators to support with tips and cheers
-          </p>
+        {/* Header with refresh button */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-bold bg-linear-to-r from-[#FF6B35] to-[#FF8C42] bg-clip-text text-transparent mb-2">
+              Discover Creators
+            </h1>
+            <p className="text-gray-600">
+              Find amazing creators to support with tips and cheers
+            </p>
+          </div>
+          <button
+            onClick={() => fetchCreators(true)}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FiRefreshCw className={isLoading ? 'animate-spin' : ''} />
+            <span className="hidden sm:inline">{isLoading ? 'Loading...' : 'Refresh'}</span>
+          </button>
         </div>
 
         {/* Search & Filters */}
@@ -181,33 +193,40 @@ const Discover: React.FC = () => {
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-600 mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()}>
-              Try Again
-            </Button>
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+            <p className="text-red-800">{error}</p>
+            <button 
+              onClick={() => fetchCreators(true)}
+              className="text-red-600 underline text-sm mt-2 hover:text-red-800"
+            >
+              Try again
+            </button>
           </div>
         )}
 
         {/* Empty State */}
         {!isLoading && !error && filteredCreators.length === 0 && (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FiSearch className="text-[#FF6B35] text-3xl" />
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              {searchQuery ? (
+                <FiSearch className="w-12 h-12 text-gray-400" />
+              ) : (
+                <FiUsers className="w-12 h-12 text-gray-400" />
+              )}
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">
-              No Creators Found
-            </h3>
-            <p className="text-gray-600 mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {searchQuery ? 'No Creators Found' : 'No Creators Yet'}
+            </h2>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
               {searchQuery
                 ? `No creators match "${searchQuery}". Try a different search term.`
-                : 'Be the first to register as a creator!'}
+                : 'Be the first to join! Register as a creator and start receiving tips from supporters.'}
             </p>
             <Button
               onClick={() => navigate('/register-creator')}
               className="bg-linear-to-r from-[#FF6B35] to-[#FF8C42] text-white"
             >
-              Register as Creator
+              {searchQuery ? 'Register as Creator' : 'Become a Creator'}
             </Button>
           </div>
         )}
